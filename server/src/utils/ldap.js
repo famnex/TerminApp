@@ -33,6 +33,13 @@ async function getLdapConfig() {
         url = `${url}:${config.ldap_port}`;
     }
 
+    // TLS Options
+    // Force rejectUnauthorized to false if configured, defaulting to false for robustness in internal networks
+    const verifyCert = isTrue(config.ldap_verify_cert);
+    const tlsOptions = isSSL ? {
+        rejectUnauthorized: verifyCert
+    } : undefined;
+
     return {
         url: url,
         baseDN: config.ldap_searchBase,
@@ -44,14 +51,14 @@ async function getLdapConfig() {
                 'cn',
                 config.ldap_userAttr || 'sAMAccountName',
                 config.ldap_emailAttr || 'mail',
-                config.ldap_displayNameAttr || 'displayName' // NEW
+                config.ldap_displayNameAttr || 'displayName'
             ],
         },
-        // TLS Options
-        tlsOptions: isSSL ? {
-            rejectUnauthorized: isTrue(config.ldap_verify_cert)
-        } : undefined,
-        // Custom property for our usage (ignored by AD lib)
+        tlsOptions: tlsOptions,
+        // Increase timeouts
+        connectTimeout: 10000,
+        socketTimeout: 10000,
+        // Custom property
         ldap_upnSuffix: config.ldap_upnSuffix
     };
 }
