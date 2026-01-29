@@ -85,14 +85,6 @@ try {
             // This is desired for code, undesired for data. 
             // Data files (db, uploads) are NOT in remote, so they are safe.
             execSync('git reset --hard origin/main', { cwd: ROOT_DIR, encoding: 'utf8' });
-
-            // Explicitly set upstream to avoid "no tracking info" error in future
-            try {
-                execSync('git branch --set-upstream-to=origin/main', { cwd: ROOT_DIR, stdio: 'ignore' });
-            } catch (ignore) {
-                // Main branch name might differ or checkout distinct? Usually safe to ignore if reset worked.
-            }
-
             log('Repository integrated successfully.');
 
         } catch (e) {
@@ -104,8 +96,7 @@ try {
         log('Pulling latest changes from git...');
         // Redirect stdio to log file is tricky with execSync, so we capture output
         try {
-            // Explicitly pull origin main to avoid tracking issues
-            const output = execSync('git pull origin main', { cwd: ROOT_DIR, encoding: 'utf8' });
+            const output = execSync('git pull', { cwd: ROOT_DIR, encoding: 'utf8' });
             log(output);
         } catch (e) {
             log('Git Pull Error: ' + e.message);
