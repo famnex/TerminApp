@@ -1,0 +1,32 @@
+{
+    "name": "appointment-server",
+    "version": "1.0.0",
+    "description": "Backend for Appointment Web App",
+    "main": "src/index.js",
+    "scripts": {
+        "start": "node src/index.js",
+        "dev": "nodemon src/index.js"
+    },
+    "dependencies": {
+        "activedirectory2": "^2.2.0",
+        "bcrypt": "^6.0.0",
+        "bcryptjs": "^3.0.3",
+        "cors": "^2.8.5",
+        "date-fns": "^3.3.1",
+        "dotenv": "^16.4.1",
+        "express": "^4.18.2",
+        "ical-generator": "^6.0.0",
+        "jsonwebtoken": "^9.0.3",
+        "multer": "^2.0.2",
+        "node-cron": "^3.0.3",
+        "nodemailer": "^6.9.9",
+        "passport": "^0.7.0",
+        "passport-local": "^1.0.0",
+        "sequelize": "^6.37.1",
+        "sqlite3": "^5.1.7",
+        "uuid": "^9.0.1"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.3"
+    }
+}

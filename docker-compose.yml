@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    image: appointment-app:latest
+    container_name: appointment-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - UPLOAD_DIR=/app/uploads
+      # Add other environment variables here if needed, e.g.
+      # - JWT_SECRET=your_secret_here
+      # - LDAP_URL=...
+    volumes:
+      - ./data:/app/data  # Persist SQLite database (we need to configure path in code too or just mount the file)
+      - ./uploads:/app/uploads # Persist uploads
+      # Map the database file specifically if it's in the root or a folder
+      - ./server/database.sqlite:/app/database.sqlite 
+    # NOTE: Since SQLite is file-based, we map the file from host to container.
+    # The app looks for it at ./database.sqlite relative to workdir (/app).
