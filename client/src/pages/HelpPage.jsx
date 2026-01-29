@@ -43,7 +43,6 @@ const HelpPage = () => {
                                 <p>Hier verwalten Sie alle Personen, die Zugriff auf das System haben oder Termine anbieten.</p>
                                 <ul className="list-disc pl-5 space-y-2">
                                     <li><strong>Benutzer anlegen:</strong> Klicken Sie auf "Neuer Benutzer". Sie können wählen, ob die Person ein <em>Administrator</em> (voller Zugriff) oder ein <em>Standard-Benutzer</em> (nur eigene Termine) ist.</li>
-                                    <li><strong>Experten-Status:</strong> Nur Benutzer, bei denen "Ist Experte / Kann gebucht werden" aktiviert ist, erscheinen auf der Buchungsseite für Kunden.</li>
                                     <li><strong>Passwort zurücksetzen:</strong> Administratoren können Passwörter für andere Benutzer neu setzen.</li>
                                     <li><strong>LDAP / Active Directory:</strong> Wenn konfiguriert, können sich Benutzer mit ihrem Windows-Login anmelden. Diese werden beim ersten Login automatisch als Standard-Benutzer angelegt.</li>
                                 </ul>
@@ -85,15 +84,25 @@ const HelpPage = () => {
                         {/* Termine */}
                         <AccordionItem value="appointments">
                             <AccordionTrigger className="text-lg font-medium">
-                                <span className="flex items-center gap-2"><Calendar className="h-5 w-5 text-blue-600" /> Termine verwalten</span>
+                                <span className="flex items-center gap-2"><Calendar className="h-5 w-5 text-blue-600" /> Termine & Archiv</span>
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground space-y-4 pt-2">
-                                <p>Die Übersicht aller gebuchten Termine.</p>
-                                <ul className="list-disc pl-5 space-y-2">
-                                    <li><strong>Stornieren:</strong> Adminstratoren und Experten können Termine absagen. Der Kunde erhält automatisch eine E-Mail.</li>
-                                    <li><strong>Vergangene Termine:</strong> Werden ausgegraut dargestellt.</li>
-                                    <li><strong>Filter:</strong> Nutzen Sie die Suche, um Buchungen nach Name oder Datum zu finden.</li>
-                                </ul>
+                                <p>Verwaltung Ihrer Buchungen in zwei Bereichen:</p>
+                                <div className="space-y-2">
+                                    <h4 className="font-semibold text-foreground text-sm">Bereich "Aktuell"</h4>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        <li><strong>Stornieren:</strong> Sagt den Termin ab und benachrichtigt den Kunden per E-Mail.</li>
+                                        <li><strong>Ins Archiv verschieben:</strong> Entfernt den Termin aus der aktuellen Ansicht, behält ihn aber für die Historie.</li>
+                                        <li><strong>Löschen:</strong> Entfernt den Termin <em>endgültig</em> aus der Datenbank.</li>
+                                    </ul>
+                                </div>
+                                <div className="space-y-2 pt-2">
+                                    <h4 className="font-semibold text-foreground text-sm">Bereich "Archiv"</h4>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        <li>Hier landen erledigte oder manuell archivierte Termine.</li>
+                                        <li><strong>Wiederherstellen:</strong> Verschiebt einen Termin zurück in den Bereich "Aktuell".</li>
+                                    </ul>
+                                </div>
                             </AccordionContent>
                         </AccordionItem>
 
@@ -153,7 +162,7 @@ const HelpPage = () => {
                                             <li>
                                                 <strong>Zieltyp (Benutzer vs. Abteilung):</strong>
                                                 <br />
-                                                Entscheiden Sie, ob Sie explizite Personen auswählen oder eine ganze Abteilung. Bei Abteilungen gilt die Regel für <em>jeden</em>, der Mitglied dieser Abteilung ist.
+                                                Entscheiden Sie, ob Sie explizite Personen auswählen oder eine ganze Abteilung. Bei Abteilungen gilt die Regel für <em>jeden</em>, der Mitglied dieser Abteilung ist. (Bei Änderungen in der Abteilung wird automatisch synchronisiert).
                                             </li>
                                             <li>
                                                 <strong>"Auch für zukünftige Benutzer anwenden" (Auto-Apply):</strong>
@@ -173,6 +182,14 @@ const HelpPage = () => {
                                             <li><strong>Onboarding:</strong> Erstellen Sie eine Regel "Basis-Verfügbarkeit" (Mo-Fr 9-17 Uhr) mit <em>Auto-Apply</em>. Jeder neue Mitarbeiter ist sofort buchbar.</li>
                                             <li><strong>Schließtage:</strong> Erstellen Sie eine Regel "Betriebsausflug" (Bestimmtes Datum, aber keine Zeiten eingetragen = blockiert) und weisen Sie diese der Abteilung "Alle" zu.</li>
                                         </ul>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="font-semibold text-foreground flex items-center gap-2 mb-1">
+                                            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs font-bold">ACHTUNG</span>
+                                            Löschen von Regeln
+                                        </h4>
+                                        <p className="text-sm">Wenn Sie eine Regel löschen, werden auch <strong>alle</strong> Einträge (Themen/Zeiten), die durch diese Regel erstellt wurden, bei den Benutzern gelöscht!</p>
                                     </div>
                                 </div>
                             </AccordionContent>
@@ -198,7 +215,7 @@ const HelpPage = () => {
             </Card>
 
             <div className="bg-muted p-4 rounded-lg text-sm text-center">
-                <p>Version: {window.APP_VERSION || '1.0.4'} | &copy; {new Date().getFullYear()} TerminApp</p>
+                <p>Version: {window.APP_VERSION || '1.0.6'} | &copy; {new Date().getFullYear()} TerminApp</p>
                 <p className="text-xs text-muted-foreground mt-1">Developed by Steffen Fleischer (famnex)</p>
             </div>
         </div>
