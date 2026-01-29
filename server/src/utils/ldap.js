@@ -37,10 +37,11 @@ async function getLdapConfig() {
     // Force rejectUnauthorized to false if configured, defaulting to false for robustness in internal networks
     const verifyCert = isTrue(config.ldap_verify_cert);
     const tlsOptions = isSSL ? {
-        rejectUnauthorized: verifyCert
+        rejectUnauthorized: verifyCert,
+        minVersion: 'TLSv1'
     } : undefined;
 
-    return {
+    const adConfig = {
         url: url,
         baseDN: config.ldap_searchBase,
         username: config.ldap_bindDN,
@@ -55,12 +56,20 @@ async function getLdapConfig() {
             ],
         },
         tlsOptions: tlsOptions,
-        // Increase timeouts
-        connectTimeout: 10000,
-        socketTimeout: 10000,
-        // Custom property
+        connectTimeout: 20000, // 20s
+        socketTimeout: 20000,
         ldap_upnSuffix: config.ldap_upnSuffix
     };
+
+    console.log('--- DEBUG: LDAP CONFIG LOADED ---');
+    console.log(`URL: ${adConfig.url}`);
+    console.log(`BindDN: ${adConfig.username}`);
+    console.log(`BaseDN: ${adConfig.baseDN}`);
+    console.log(`SSL: ${isSSL}, VerifyCert: ${verifyCert}`);
+    console.log(`TLS Options: ${JSON.stringify(tlsOptions)}`);
+    console.log('---------------------------------');
+
+    return adConfig;
 }
 
 /**
@@ -74,6 +83,7 @@ async function authenticateLDAP(username, password) {
     if (!config) return null;
 
     return new Promise((resolve, reject) => {
+        console.log(`\n--- LDAP AUTH START: ${username} ---`);
         const ad = new ActiveDirectory(config);
 
         // Ensure username has domain/suffix if configured
@@ -82,32 +92,37 @@ async function authenticateLDAP(username, password) {
             bindUser = bindUser + config.ldap_upnSuffix;
         }
 
-        console.log(`LDAP Login Attempt: User='${username}', BindUser='${bindUser}'`);
+        console.log(`Step 1: Authenticating BindUser='${bindUser}'`);
 
         ad.authenticate(bindUser, password, function (err, auth) {
             if (err) {
-                console.error('LDAP Auth Error:', err);
-                return resolve(null); // Resolve null to indicate failure instead of throwing
+                console.error('❌ LDAP Auth Error Details:');
+                console.error(JSON.stringify(err, null, 2));
+                if (err.code === 'ECONNRESET') {
+                    console.error('CAUSE: ECONNRESET - Connection was closed by the server (Check TLS versions/Ciphers/Firewall)');
+                }
+                return resolve(null);
             }
 
-            console.log(`LDAP Auth Result: ${auth}`);
+            console.log(`Step 2: Auth Result: ${auth}`);
 
             if (auth) {
-                // If authenticated, fetch user details using the search filter (sAMAccountName usually)
-                // Note: activeDirectory2 findUser uses the filter (e.g. sAMAccountName=username)
-                // We typically search by the raw username (sAMAccountName), NOT the UPN (email).
-                // So we pass 'username' (without suffix) to findUser if ldap_userAttr is sAMAccountName.
-
+                console.log(`Step 3: Fetching user details for '${username}'`);
                 ad.findUser(username, function (err, user) {
                     if (err) {
-                        console.error('LDAP Find Error:', err);
+                        console.error('❌ LDAP Find Error:', err);
                         return resolve(null);
                     }
-                    if (!user) return resolve(null);
+                    if (!user) {
+                        console.warn(`⚠️ User '${username}' authenticated but not found in directory search.`);
+                        return resolve(null);
+                    }
 
+                    console.log('✅ LDAP Authentication Successful');
                     resolve(user);
                 });
             } else {
+                console.warn('⚠️ LDAP Authentication failed (auth=false)');
                 resolve(null);
             }
         });
@@ -118,63 +133,67 @@ async function authenticateLDAP(username, password) {
  * Test LDAP Connection with provided config (for the test button)
  */
 async function testLdapConnection(testConfig, username, password) {
-    return new Promise((resolve, reject) => {
-        let url = testConfig.ldap_url;
-        const isTrue = (val) => val === 'true' || val === true || val === '1' || val === 1;
-        const isSSL = isTrue(testConfig.ldap_ssl);
+    const isTrue = (val) => val === 'true' || val === true || val === '1' || val === 1;
 
-        if (url) {
-            if (isSSL && url.startsWith('ldap://')) {
-                url = url.replace('ldap://', 'ldaps://');
-            } else if (!url.startsWith('ldap://') && !url.startsWith('ldaps://')) {
-                url = isSSL ? `ldaps://${url}` : `ldap://${url}`;
-            }
+    // Normalize logic
+    let url = testConfig.ldap_url;
+    const isSSL = isTrue(testConfig.ldap_ssl);
+
+    if (url) {
+        if (isSSL && url.startsWith('ldap://')) {
+            url = url.replace('ldap://', 'ldaps://');
+        } else if (!url.startsWith('ldap://') && !url.startsWith('ldaps://')) {
+            url = isSSL ? `ldaps://${url}` : `ldap://${url}`;
         }
+    }
 
-        // ... (port check remains same)
+    if (testConfig.ldap_port && !url.split('://')[1].includes(':')) {
+        url = `${url}:${testConfig.ldap_port}`;
+    }
 
-        const adConfig = {
-            url: url,
-            baseDN: testConfig.ldap_searchBase,
-            username: testConfig.ldap_bindDN,
-            password: testConfig.ldap_bindCredentials,
-            tlsOptions: isSSL ? {
-                rejectUnauthorized: isTrue(testConfig.ldap_verify_cert)
-            } : undefined,
-            connectTimeout: 5000,
-            socketTimeout: 5000
-        };
+    const adConfig = {
+        url: url,
+        baseDN: testConfig.ldap_searchBase,
+        username: testConfig.ldap_bindDN,
+        password: testConfig.ldap_bindCredentials,
+        tlsOptions: isSSL ? {
+            rejectUnauthorized: isTrue(testConfig.ldap_verify_cert),
+            minVersion: 'TLSv1'
+        } : undefined,
+        connectTimeout: 10000, // 10s for testing
+        socketTimeout: 10000
+    };
 
-        // DEBUG
-        console.log('LDAP Config prepared. Testing Service Bind...');
+    console.log('\n--- LDAP TEST CONNECTION START ---');
+    console.log(`URL: ${adConfig.url}`);
+    console.log(`Bind DN: ${adConfig.username}`);
+    console.log(`TLS: ${JSON.stringify(adConfig.tlsOptions)}`);
 
+    return new Promise((resolve, reject) => {
         const ad = new ActiveDirectory(adConfig);
 
-        // STEP 1: Verify Service Account (Bind DN)
-        // We do this by searching for the bind user itself (or a dummy).
-        // ad.findUser triggers a bind with the service account.
-        ad.findUser(testConfig.ldap_bindDN, function (err, result) {
+        console.log('Step 1: Testing Service Bind (findUser with BindDN)...');
+        ad.findUser(adConfig.username, function (err, result) {
             if (err) {
-                console.error('LDAP Service Bind Failed:', err);
-                // Distinguish 52e here
+                console.error('❌ LDAP Service Bind Failed:', JSON.stringify(err, null, 2));
                 if (err.lde_message && err.lde_message.includes('52e')) {
                     return reject(new Error('SERVICE BIND FAILED: Die Zugangsdaten für den "Bind DN" (Service User) sind falsch.'));
                 }
                 return reject(err);
             }
 
-            console.log('LDAP Service Bind Successful. Now testing User Authentication...');
+            console.log('✅ Service Bind Successful. Step 2: Testing User Authentication...');
 
-            // Normalize Test User
             let bindUser = username;
             if (testConfig.ldap_upnSuffix && !bindUser.includes('@')) {
                 bindUser = bindUser + testConfig.ldap_upnSuffix;
             }
 
-            // STEP 2: Authenticate the Test User
+            console.log(`Attempting auth for: ${bindUser}`);
+
             ad.authenticate(bindUser, password, function (err, auth) {
                 if (err) {
-                    console.error('LDAP User Auth Failed:', err);
+                    console.error('❌ LDAP User Auth Failed:', JSON.stringify(err, null, 2));
                     if (err.lde_message && err.lde_message.includes('52e')) {
                         return reject(new Error('USER AUTH FAILED: Login für den Test-Benutzer fehlgeschlagen. Versuchen Sie "user@domain" oder "DOMAIN\\user".'));
                     }
@@ -182,12 +201,18 @@ async function testLdapConnection(testConfig, username, password) {
                 }
 
                 if (auth) {
+                    console.log('✅ User Auth Successful. Step 3: Verifying User Object...');
                     ad.findUser(username, function (err, user) {
-                        if (err) return reject(err);
+                        if (err) {
+                            console.error('❌ LDAP Final Search Failed:', err);
+                            return reject(err);
+                        }
                         if (!user) return reject(new Error('User authenticated but object is null'));
+                        console.log('✅ Test Complete: Success');
                         resolve(user);
                     });
                 } else {
+                    console.warn('⚠️ Authentication failed (Invalid Credentials)');
                     reject(new Error('Authentication failed (Invalid Credentials for Test User)'));
                 }
             });
