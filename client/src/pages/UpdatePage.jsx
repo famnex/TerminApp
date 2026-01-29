@@ -115,7 +115,7 @@ const UpdatePage = () => {
                     {status === 'available' && (
                         <div className="space-y-4">
                             <Alert className="flex items-start gap-4">
-                                <AlertCircle className="h-4 w-4 mt-1" />
+                                <AlertCircle className="h-4 w-4" />
                                 <div>
                                     <AlertTitle>Neue Version verfügbar: v{latestVersion}</AlertTitle>
                                     <AlertDescription>

@@ -2,7 +2,7 @@ import React from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, BookOpen, Users, Calendar, Settings, Clock, RefreshCw, Hexagon, Layers } from 'lucide-react';
+import { ArrowLeft, BookOpen, Users, Calendar, Settings, Clock, RefreshCw, Hexagon, Layers, Lock, LayoutList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const HelpPage = () => {
@@ -34,18 +34,52 @@ const HelpPage = () => {
                 <CardContent>
                     <Accordion type="single" collapsible className="w-full">
 
-                        {/* Benutzerverwaltung */}
-                        <AccordionItem value="users">
+                        {/* Buchungsseite (Frontend) */}
+                        <AccordionItem value="frontend">
                             <AccordionTrigger className="text-lg font-medium">
-                                <span className="flex items-center gap-2"><Users className="h-5 w-5 text-emerald-600" /> Benutzerverwaltung</span>
+                                <span className="flex items-center gap-2"><LayoutList className="h-5 w-5 text-sky-600" /> Buchungsseite & Kunden</span>
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground space-y-4 pt-2">
-                                <p>Hier verwalten Sie alle Personen, die Zugriff auf das System haben oder Termine anbieten.</p>
+                                <p>So sehen Ihre Kunden (Eltern, Studenten) das System:</p>
                                 <ul className="list-disc pl-5 space-y-2">
-                                    <li><strong>Benutzer anlegen:</strong> Klicken Sie auf "Neuer Benutzer". Sie können wählen, ob die Person ein <em>Administrator</em> (voller Zugriff) oder ein <em>Standard-Benutzer</em> (nur eigene Termine) ist.</li>
-                                    <li><strong>Passwort zurücksetzen:</strong> Administratoren können Passwörter für andere Benutzer neu setzen.</li>
-                                    <li><strong>LDAP / Active Directory:</strong> Wenn konfiguriert, können sich Benutzer mit ihrem Windows-Login anmelden. Diese werden beim ersten Login automatisch als Standard-Benutzer angelegt.</li>
+                                    <li><strong>Der Wizard:</strong> Die Buchung erfolgt in einfachen Schritten:
+                                        <ol className="list-decimal pl-5 mt-1 space-y-1 text-sm bg-muted/30 p-2 rounded">
+                                            <li>Auswahl des Themas (Was?)</li>
+                                            <li>Auswahl des Gesprächspartners (Wer?)</li>
+                                            <li>Auswahl des Termins (Wann?)</li>
+                                            <li>Eingabe der Kontaktdaten & Bestätigung.</li>
+                                        </ol>
+                                    </li>
+                                    <li><strong>iCalendar (ICS):</strong> Nach erfolgreicher Buchung erhalten Kunden (und Sie) eine E-Mail-Bestätigung. Diese enthält eine <code>.ics</code> Datei, mit der der Termin direkt in Outlook, Google Calendar oder Apple Calendar gespeichert werden kann.</li>
                                 </ul>
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        {/* Benutzerverwaltung & Abteilungen */}
+                        <AccordionItem value="users">
+                            <AccordionTrigger className="text-lg font-medium">
+                                <span className="flex items-center gap-2"><Users className="h-5 w-5 text-emerald-600" /> Benutzer & Abteilungen</span>
+                            </AccordionTrigger>
+                            <AccordionContent className="text-muted-foreground space-y-4 pt-2">
+                                <p>Verwalten Sie die Struktur Ihrer Organisation.</p>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="font-semibold text-foreground">Benutzer</h4>
+                                        <ul className="list-disc pl-5 space-y-1">
+                                            <li><strong>Rollen:</strong> <em>Administratoren</em> haben Vollzugriff. <em>Standard-Benutzer</em> verwalten nur sich selbst.</li>
+                                            <li><strong>LDAP:</strong> Windows-Logins werden automatisch erkannt und Benutzerkonten erstellt.</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold text-foreground">Abteilungen</h4>
+                                        <ul className="list-disc pl-5 space-y-1">
+                                            <li><strong>Zweck:</strong> Gruppieren Sie Nutzer (z.B. "Mathematik", "Sekretariat").</li>
+                                            <li><strong>Vorteil:</strong> Sie können Regeln (s.u.) direkt ganzen Abteilungen zuweisen. Alle Mitglieder erben dann diese Einstellungen.</li>
+                                            <li><strong>Verwaltung:</strong> Im Reiter "Abteilungen" können Sie Gruppen erstellen und Mitglieder per Klick hinzufügen.</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </AccordionContent>
                         </AccordionItem>
 
@@ -57,10 +91,14 @@ const HelpPage = () => {
                             <AccordionContent className="text-muted-foreground space-y-4 pt-2">
                                 <p>Steuern Sie, wann Sie für Kunden buchbar sind.</p>
                                 <ul className="list-disc pl-5 space-y-2">
-                                    <li><strong>Wochenplan:</strong> Setzen Sie Ihre Standardzeiten (z.B. Mo-Fr 08:00 - 16:00).</li>
-                                    <li><strong>Gerade / Ungerade Wochen:</strong> Nutzen Sie diese Option, wenn sich Ihre Arbeitszeiten zweiwöchentlich ändern.</li>
-                                    <li><strong>Spezifisches Datum:</strong> Überschreiben Sie den Standardplan für bestimmte Tage (z.B. langer Donnerstag am 24.12.).</li>
-                                    <li><strong>Abwesenheiten:</strong> Unter "Verfügbarkeit" können Sie auch Urlaub oder Krankheitstage eintragen. Diese Zeiten sind dann für Buchungen gesperrt.</li>
+                                    <li><strong>Wochenplan & Datum:</strong> Definieren Sie Ihre Zeiten flexibel.</li>
+                                    <li>
+                                        <strong className="text-amber-600 flex items-center gap-1"><Lock className="h-3 w-3" /> Gesperrte Einträge / Schloss-Symbol:</strong>
+                                        <br />
+                                        Wenn Sie Einträge mit einem Schloss-Symbol sehen, können diese <strong>nicht gelöscht</strong> werden.
+                                        <br />
+                                        <em>Grund:</em> Diese Zeiten wurden zentral durch eine <strong>Sammelverarbeitung (Regel)</strong> erstellt. Sie sind für alle betroffenen Nutzer verpflichtend. Nur ein Administrator kann diese Regel ändern oder entfernen.
+                                    </li>
                                 </ul>
                             </AccordionContent>
                         </AccordionItem>
@@ -73,10 +111,12 @@ const HelpPage = () => {
                             <AccordionContent className="text-muted-foreground space-y-4 pt-2">
                                 <p>Definieren Sie, <em>was</em> gebucht werden kann.</p>
                                 <ul className="list-disc pl-5 space-y-2">
-                                    <li>Jedes Thema hat eine feste <strong>Dauer</strong> (in Minuten).</li>
-                                    <li>Themen können bestimmten <strong>Abteilungen</strong> zugewiesen werden.</li>
-                                    <li>Wenn ein Thema aktiv ist, können Kunden es im ersten Schritt der Buchung auswählen.</li>
-                                    <li><strong>Tipp:</strong> Nutzen Sie sprechende Namen wie "Beratungsgespräch (30 min)" oder "Erstaufnahme".</li>
+                                    <li>Themen definieren Dauer und Titel des Angebots.</li>
+                                    <li>
+                                        <strong className="text-amber-600 flex items-center gap-1"><Lock className="h-3 w-3" /> Gesperrt / Nicht löschbar:</strong>
+                                        <br />
+                                        Auch hier gilt: Themen mit Schloss-Symbol kommen aus einer zentralen Regel. Wenn z.B. die Schule "Elternsprechtag" für alle festlegt, erscheint dieses Thema bei jedem Lehrer und kann nicht individuell entfernt werden.
+                                    </li>
                                 </ul>
                             </AccordionContent>
                         </AccordionItem>
@@ -87,22 +127,12 @@ const HelpPage = () => {
                                 <span className="flex items-center gap-2"><Calendar className="h-5 w-5 text-blue-600" /> Termine & Archiv</span>
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground space-y-4 pt-2">
-                                <p>Verwaltung Ihrer Buchungen in zwei Bereichen:</p>
-                                <div className="space-y-2">
-                                    <h4 className="font-semibold text-foreground text-sm">Bereich "Aktuell"</h4>
-                                    <ul className="list-disc pl-5 space-y-1">
-                                        <li><strong>Stornieren:</strong> Sagt den Termin ab und benachrichtigt den Kunden per E-Mail.</li>
-                                        <li><strong>Ins Archiv verschieben:</strong> Entfernt den Termin aus der aktuellen Ansicht, behält ihn aber für die Historie.</li>
-                                        <li><strong>Löschen:</strong> Entfernt den Termin <em>endgültig</em> aus der Datenbank.</li>
-                                    </ul>
-                                </div>
-                                <div className="space-y-2 pt-2">
-                                    <h4 className="font-semibold text-foreground text-sm">Bereich "Archiv"</h4>
-                                    <ul className="list-disc pl-5 space-y-1">
-                                        <li>Hier landen erledigte oder manuell archivierte Termine.</li>
-                                        <li><strong>Wiederherstellen:</strong> Verschiebt einen Termin zurück in den Bereich "Aktuell".</li>
-                                    </ul>
-                                </div>
+                                <p>Verwaltung Ihrer Buchungen.</p>
+                                <ul className="list-disc pl-5 space-y-1">
+                                    <li><strong>Stornieren:</strong> Informiert Kunden per Mail.</li>
+                                    <li><strong>Archivieren:</strong> Verschiebt erledigte Termine ins Archiv.</li>
+                                    <li><strong>Wiederherstellen:</strong> Holt Termine aus dem Archiv zurück.</li>
+                                </ul>
                             </AccordionContent>
                         </AccordionItem>
 
@@ -112,30 +142,12 @@ const HelpPage = () => {
                                 <span className="flex items-center gap-2"><Settings className="h-5 w-5 text-slate-600" /> System Einstellungen</span>
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground space-y-4 pt-2">
-                                <p>Die globalen Konfigurationen der Anwendung.</p>
-                                <div className="space-y-4">
-                                    <div>
-                                        <h4 className="font-semibold text-foreground">Allgemein & Design</h4>
-                                        <ul className="list-disc pl-5 space-y-1">
-                                            <li><strong>Titel & Logo:</strong> Passen Sie den Namen der App und das Logo an, das oben links angezeigt wird.</li>
-                                            <li><strong>Primärfarbe:</strong> Wählen Sie eine HEX-Farbe (z.B. #ff0000), um das gesamte Farb-Schema der Buttons und Akzente an Ihr Branding anzupassen.</li>
-                                        </ul>
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold text-foreground">SMTP (E-Mail Versand)</h4>
-                                        <ul className="list-disc pl-5 space-y-1">
-                                            <li>Damit das System E-Mails (Bestätigungen, Stornos) versenden kann, müssen Sie hier Ihren SMTP-Server hinterlegen.</li>
-                                            <li>Testen Sie die Verbindung mit dem "Test E-Mail senden"-Button.</li>
-                                        </ul>
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold text-foreground">LDAP / Active Directory</h4>
-                                        <ul className="list-disc pl-5 space-y-1">
-                                            <li>Verbindet die App mit Ihrem Unternehmensverzeichnis.</li>
-                                            <li><strong>Auto-Provisioning:</strong> Wenn sich ein Benutzer mit seinem Windows-Account anmeldet, wird er automatisch als "Standard-Benutzer" im System angelegt.</li>
-                                        </ul>
-                                    </div>
-                                </div>
+                                <p>Globale Konfigurationen (Admin).</p>
+                                <ul className="list-disc pl-5 space-y-1">
+                                    <li><strong>SMTP:</strong> Mail-Server für Bestätigungen & iCals.</li>
+                                    <li><strong>LDAP:</strong> Anbindung an Benutzerverzeichnis.</li>
+                                    <li><strong>Design:</strong> Logo & Unternehmensfarben.</li>
+                                </ul>
                             </AccordionContent>
                         </AccordionItem>
 
@@ -145,51 +157,22 @@ const HelpPage = () => {
                                 <span className="flex items-center gap-2"><Layers className="h-5 w-5 text-indigo-600" /> Sammelverarbeitung & Regeln</span>
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground space-y-4 pt-2">
-                                <p>Die Sammelverarbeitung ist ein mächtiges Werkzeug, um vielen Benutzern gleichzeitig Themen oder Verfügbarkeiten zuzuweisen. Sie basiert auf **Regeln**.</p>
+                                <p>Zentrale Steuerung für viele Nutzer.</p>
 
                                 <div className="space-y-4">
                                     <div className="bg-muted/50 p-4 rounded-md border">
                                         <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2">
-                                            <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs">LOGIK</span>
-                                            Wie funktionieren Regeln?
+                                            <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs">MÄCHTIG</span>
+                                            Das Prinzip der Regeln
                                         </h4>
-                                        <p className="text-sm">Eine Regel ist eine "Vorlage" (z.B. "Standard-Arbeitszeit 08:00-16:00" oder "Leistung: Beratung"). Diese Regel wird mit Benutzern oder Abteilungen verknüpft. Solange die Regel aktiv ist, besitzen die verknüpften Benutzer diesen Eintrag.</p>
+                                        <p className="text-sm">Regeln erstellen Einträge bei Benutzern. Solange die Regel existiert, "erwingt" sie diese Einträge. Deshalb erscheinen sie bei den Nutzern als <strong>gesperrt (Schloss-Symbol)</strong> und können dort nicht gelöscht werden.</p>
                                     </div>
 
                                     <div>
-                                        <h4 className="font-semibold text-foreground">Optionen beim Erstellen</h4>
                                         <ul className="list-disc pl-5 space-y-2">
-                                            <li>
-                                                <strong>Zieltyp (Benutzer vs. Abteilung):</strong>
-                                                <br />
-                                                Entscheiden Sie, ob Sie explizite Personen auswählen oder eine ganze Abteilung. Bei Abteilungen gilt die Regel für <em>jeden</em>, der Mitglied dieser Abteilung ist. (Bei Änderungen in der Abteilung wird automatisch synchronisiert).
-                                            </li>
-                                            <li>
-                                                <strong>"Auch für zukünftige Benutzer anwenden" (Auto-Apply):</strong>
-                                                <br />
-                                                Dies ist die wichtigste Option für Automatisierung.
-                                                <ul className="list-circle pl-5 mt-1 space-y-1 text-sm">
-                                                    <li><em>Aktiviert:</em> Wenn Sie später einen neuen Benutzer anlegen (oder dieser sich via LDAP einloggt), prüft das System, ob es aktive Regeln mit dieser Option gibt. Falls ja, werden dem neuen Benutzer sofort die entsprechenden Arbeitszeiten/Themen zugewiesen.</li>
-                                                    <li><em>Deaktiviert:</em> Die Regel gilt nur für die <strong>jetzt</strong> ausgewählten Benutzer.</li>
-                                                </ul>
-                                            </li>
+                                            <li><strong>Abteilungen nutzen:</strong> Weisen Sie eine Regel einer Abteilung zu (z.B. "Alle Lehrer"). Jeder, der in die Abteilung kommt, erhält sofort die Arbeitszeiten/Themen.</li>
+                                            <li><strong>Auto-Update:</strong> Ändern Sie die Regel zentral (z.B. Dauer von 30 auf 45 Min), wird dies sofort bei allen verknüpften Nutzern aktualisiert.</li>
                                         </ul>
-                                    </div>
-
-                                    <div>
-                                        <h4 className="font-semibold text-foreground">Beispiele</h4>
-                                        <ul className="list-disc pl-5 space-y-1">
-                                            <li><strong>Onboarding:</strong> Erstellen Sie eine Regel "Basis-Verfügbarkeit" (Mo-Fr 9-17 Uhr) mit <em>Auto-Apply</em>. Jeder neue Mitarbeiter ist sofort buchbar.</li>
-                                            <li><strong>Schließtage:</strong> Erstellen Sie eine Regel "Betriebsausflug" (Bestimmtes Datum, aber keine Zeiten eingetragen = blockiert) und weisen Sie diese der Abteilung "Alle" zu.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div>
-                                        <h4 className="font-semibold text-foreground flex items-center gap-2 mb-1">
-                                            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs font-bold">ACHTUNG</span>
-                                            Löschen von Regeln
-                                        </h4>
-                                        <p className="text-sm">Wenn Sie eine Regel löschen, werden auch <strong>alle</strong> Einträge (Themen/Zeiten), die durch diese Regel erstellt wurden, bei den Benutzern gelöscht!</p>
                                     </div>
                                 </div>
                             </AccordionContent>
@@ -201,12 +184,7 @@ const HelpPage = () => {
                                 <span className="flex items-center gap-2"><RefreshCw className="h-5 w-5 text-pink-600" /> Updates</span>
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground space-y-4 pt-2">
-                                <p>Das System verfügt über einen Update-Manager ("Over-the-Air").</p>
-                                <ul className="list-disc pl-5 space-y-2">
-                                    <li>Das System prüft regelmäßig auf GitHub nach neuen Releases.</li>
-                                    <li>Mit einem Klick auf "Update installieren" lädt der Server den neuen Code, installiert Abhängigkeiten neu und startet sich selbst neu.</li>
-                                    <li>Dabei wird automatisch ein Backup der Datenbank erstellt.</li>
-                                </ul>
+                                <p>Das System aktualisiert sich automatisch über GitHub Releases, inkl. Datenbank-Backups.</p>
                             </AccordionContent>
                         </AccordionItem>
 
