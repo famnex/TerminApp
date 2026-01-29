@@ -4,7 +4,8 @@
     "scripts": {
         "server": "cd server && npm run dev",
         "client": "cd client && npm run dev",
-        "dev": "concurrently \"npm run server\" \"npm run client\""
+        "dev": "concurrently \"npm run server\" \"npm run client\"",
+        "update": "node server/scripts/update.js"
     },
     "dependencies": {
         "concurrently": "^8.2.2"
