@@ -1,6 +1,6 @@
 {
     "name": "appointment-server",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Backend for Appointment Web App",
     "main": "src/index.js",
     "scripts": {

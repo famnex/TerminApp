@@ -677,19 +677,41 @@ router.get('/updates/check', async (req, res) => {
     }
 });
 
+router.get('/updates/log', (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const logPath = path.join(__dirname, '../../update.log');
+
+        if (fs.existsSync(logPath)) {
+            const logs = fs.readFileSync(logPath, 'utf8');
+            res.json({ logs });
+        } else {
+            res.json({ logs: 'Warte auf Start...' });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.post('/updates/install', async (req, res) => {
     try {
         const { spawn } = require('child_process');
         const path = require('path');
+        const fs = require('fs');
 
         const scriptPath = path.join(__dirname, '../../scripts/update.js');
+        const logPath = path.join(__dirname, '../../update.log');
+
+        // Reset log file
+        fs.writeFileSync(logPath, 'Update wird initialisiert...\n');
 
         console.log('Spawning update script:', scriptPath);
 
         // Spawn detached process for update
         const child = spawn('node', [scriptPath], {
             detached: true,
-            stdio: 'ignore'
+            stdio: 'ignore' // We write to file manually now
         });
 
         child.unref();

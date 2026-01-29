@@ -6,9 +6,16 @@ const ROOT_DIR = path.resolve(__dirname, '../../');
 const CLIENT_DIR = path.join(ROOT_DIR, 'client');
 const SERVER_DIR = path.join(ROOT_DIR, 'server');
 const DB_PATH = path.join(SERVER_DIR, 'database.sqlite');
+const LOG_FILE = path.join(SERVER_DIR, 'update.log');
+
+// Clear log file on start
+fs.writeFileSync(LOG_FILE, '');
 
 function log(message) {
-    console.log(`[Updater] ${message}`);
+    const timestamp = new Date().toISOString();
+    const line = `[${timestamp}] [Updater] ${message}\n`;
+    console.log(line.trim());
+    fs.appendFileSync(LOG_FILE, line);
 }
 
 function backupDatabase() {
@@ -28,21 +35,106 @@ try {
     // 1. Backup Database
     backupDatabase();
 
-    // 2. Git Pull
-    log('Pulling latest changes from git...');
-    execSync('git pull', { cwd: ROOT_DIR, stdio: 'inherit' });
+    // 2. Git Check & Pull
+    const gitDir = path.join(ROOT_DIR, '.git');
+    const REPO_URL = 'https://github.com/famnex/TerminApp.git';
+
+    if (!fs.existsSync(gitDir)) {
+        log('No .git directory found. Initializing git repository for updates...');
+
+        // SAFETY: Add critical files to .gitignore if not present to prevent overwrite/delete
+        const gitIgnorePath = path.join(ROOT_DIR, '.gitignore');
+        let gitIgnoreContent = '';
+        if (fs.existsSync(gitIgnorePath)) {
+            gitIgnoreContent = fs.readFileSync(gitIgnorePath, 'utf8');
+        }
+
+        const criticalIgnores = [
+            'server/database.sqlite',
+            'server/public/uploads',
+            '.env',
+            'update.log'
+        ];
+
+        let appended = false;
+        criticalIgnores.forEach(item => {
+            if (!gitIgnoreContent.includes(item)) {
+                gitIgnoreContent += `\n${item}`;
+                appended = true;
+            }
+        });
+
+        if (appended) {
+            fs.writeFileSync(gitIgnorePath, gitIgnoreContent);
+            log('Added local data files to .gitignore for safety.');
+        }
+
+        try {
+            execSync('git init', { cwd: ROOT_DIR });
+            execSync(`git remote add origin ${REPO_URL}`, { cwd: ROOT_DIR });
+            log('Git repository initialized.');
+
+            log('Fetching history...');
+            execSync('git fetch --all', { cwd: ROOT_DIR, encoding: 'utf8' });
+
+            log('Resetting to latest version...');
+            // This is dangerous if files are not ignored, but we patched .gitignore above.
+            // git reset --hard will only touch tracked files. 
+            // Since we just inited, nothing is tracked locally yet, so it should be fine mostly.
+            // But if a file exists locally AND in remote, it will be overwritten.
+            // This is desired for code, undesired for data. 
+            // Data files (db, uploads) are NOT in remote, so they are safe.
+            execSync('git reset --hard origin/main', { cwd: ROOT_DIR, encoding: 'utf8' });
+            log('Repository integrated successfully.');
+
+        } catch (e) {
+            log('Git Init/Sync Error: ' + e.message);
+            throw e;
+        }
+
+    } else {
+        log('Pulling latest changes from git...');
+        // Redirect stdio to log file is tricky with execSync, so we capture output
+        try {
+            const output = execSync('git pull', { cwd: ROOT_DIR, encoding: 'utf8' });
+            log(output);
+        } catch (e) {
+            log('Git Pull Error: ' + e.message);
+            log(e.stdout);
+            log(e.stderr);
+            throw e;
+        }
+    }
 
     // 3. Install Dependencies (Root/Server)
     log('Installing server dependencies...');
-    execSync('npm install', { cwd: ROOT_DIR, stdio: 'inherit' });
+    try {
+        const output = execSync('npm install', { cwd: ROOT_DIR, encoding: 'utf8' });
+        log(output);
+    } catch (e) {
+        log('NPM Install Error: ' + e.message);
+        throw e;
+    }
 
     // 4. Install Dependencies (Client)
     log('Installing client dependencies...');
-    execSync('npm install', { cwd: CLIENT_DIR, stdio: 'inherit' });
+    try {
+        const output = execSync('npm install', { cwd: CLIENT_DIR, encoding: 'utf8' });
+        log(output);
+    } catch (e) {
+        log('Client NPM Install Error: ' + e.message);
+        throw e;
+    }
 
     // 5. Build Client
     log('Building client...');
-    execSync('npm run build', { cwd: CLIENT_DIR, stdio: 'inherit' });
+    try {
+        const output = execSync('npm run build', { cwd: CLIENT_DIR, encoding: 'utf8' });
+        log(output);
+    } catch (e) {
+        log('Client Build Error: ' + e.message);
+        throw e;
+    }
 
     // 5.1 Copy Build to Server Public
     log('Moving client build to server/public...');
@@ -55,11 +147,10 @@ try {
     }
     fs.mkdirSync(publicDir, { recursive: true });
 
-    // Copy directory (Node < 16.7 doesn't have cpSync recursive, assuming Node 18+)
+    // Copy directory
     if (fs.cpSync) {
         fs.cpSync(distDir, publicDir, { recursive: true });
     } else {
-        // Fallback for older nodes or Windows specific if needed (simplest is shell copy or manual recursion)
         try {
             if (process.platform === 'win32') {
                 execSync(`xcopy "${distDir}" "${publicDir}" /E /I /Y`);
@@ -67,37 +158,23 @@ try {
                 execSync(`cp -r "${distDir}/"* "${publicDir}/"`);
             }
         } catch (e) {
-            console.error('Copy failed, attempting manual logic if needed', e);
+            log('Copy failed: ' + e.message);
         }
     }
 
     log('Running database migrations...');
-    // Assuming migrate_batch.js is sufficient/wrapper, or use direct sequelize CLI if available.
-    // Ideally we should have a generic migrate script.
-    // For now, attempting to run the batch migration script or a dedicated one if exists.
-    // Let's rely on `npm run migrate` if we add it, or direct node execution.
-    // Creating a quick temporary migration runner pattern if needed, but for now:
     try {
         const { sequelize } = require('../src/models');
-        // This requires the script to be run within the context where models are available requiring full init.
-        // Safer to run via shell command if we had a script.
-        // Let's assume standard behavior: new code has new models, sequelize.sync() runs on restart.
-        // But for explicit migrations (like data transformations), we might need a specific script.
-        // For 1.0.0, we rely on sync() or manual scripts.
         log('Skipping explicit migration script, relying on Sequelize sync on restart.');
     } catch (e) {
         log('Migration verification failed (non-critical if sync is enabled): ' + e.message);
     }
 
     log('Update completed successfully.');
-
-    // 7. Restart Application
-    // In PM2, exiting with 0 or 1 usually triggers restart if configured.
-    // We exit with 0 to indicate success. PM2 should be configured to restart on file changes or exit.
     log('Exiting process to trigger restart...');
     process.exit(0);
 
 } catch (error) {
-    console.error('[Updater] Error during update:', error);
+    log(`FATAL ERROR: ${error.message}`);
     process.exit(1);
 }

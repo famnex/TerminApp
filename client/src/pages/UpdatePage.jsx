@@ -12,6 +12,31 @@ const UpdatePage = () => {
     const [latestVersion, setLatestVersion] = useState('');
     const [releaseUrl, setReleaseUrl] = useState('');
     const [error, setError] = useState(null);
+    const [logs, setLogs] = useState('');
+
+    useEffect(() => {
+        let interval;
+        if (status === 'installing') {
+            interval = setInterval(async () => {
+                try {
+                    const res = await api.get('admin/updates/log');
+                    setLogs(res.data.logs);
+
+                    if (res.data.logs && res.data.logs.includes('Exiting process to trigger restart')) {
+                        // Update finished, wait a bit then reload
+                        clearInterval(interval);
+                        toast.success("Update abgeschlossen! Seite wird neu geladen...");
+                        setTimeout(() => window.location.reload(), 3000);
+                    }
+
+                } catch (err) {
+                    console.error("Log polling failed", err);
+                    // It's expected to fail when server restarts
+                }
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [status]);
 
     const checkForUpdates = async () => {
         setStatus('checking');
@@ -89,15 +114,17 @@ const UpdatePage = () => {
 
                     {status === 'available' && (
                         <div className="space-y-4">
-                            <Alert>
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>Neue Version verfügbar: v{latestVersion}</AlertTitle>
-                                <AlertDescription>
-                                    Ein neues Update ist verfügbar. <br />
-                                    <a href={releaseUrl} target="_blank" rel="noopener noreferrer" className="underline">
-                                        Release Notes auf GitHub ansehen
-                                    </a>
-                                </AlertDescription>
+                            <Alert className="flex items-start gap-4">
+                                <AlertCircle className="h-4 w-4 mt-1" />
+                                <div>
+                                    <AlertTitle>Neue Version verfügbar: v{latestVersion}</AlertTitle>
+                                    <AlertDescription>
+                                        Ein neues Update ist verfügbar. <br />
+                                        <a href={releaseUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                                            Release Notes auf GitHub ansehen
+                                        </a>
+                                    </AlertDescription>
+                                </div>
                             </Alert>
 
                             <div className="bg-muted p-4 rounded-md">
@@ -118,14 +145,18 @@ const UpdatePage = () => {
                     )}
 
                     {status === 'installing' && (
-                        <div className="flex flex-col items-center justify-center py-8 text-blue-600">
-                            <Loader2 className="h-10 w-10 animate-spin mb-2" />
-                            <p className="font-medium text-lg">Update wird installiert...</p>
-                            <p className="text-sm text-muted-foreground mt-2 text-center">
+                        <div className="flex flex-col items-center justify-center py-8 text-blue-600 w-full">
+                            <Loader2 className="h-10 w-10 animate-spin mb-4" />
+                            <p className="font-medium text-lg mb-4">Update wird installiert...</p>
+
+                            <div className="w-full bg-slate-950 text-slate-50 p-4 rounded-md font-mono text-xs h-64 overflow-y-auto whitespace-pre-wrap">
+                                {logs || 'Initialisiere...'}
+                            </div>
+
+                            <p className="text-sm text-muted-foreground mt-4 text-center">
                                 Bitte schließen Sie dieses Fenster nicht. <br />
-                                Die Anwendung wird in Kürze neu laden.
+                                Die Seite wird nach Abschluss neu geladen.
                             </p>
-                            {/* Optional: Add a manual reload button that appears after 30s */}
                         </div>
                     )}
 
