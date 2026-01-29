@@ -13,6 +13,7 @@ import Topics from './pages/Topics';
 import Settings from './pages/Settings';
 import BatchProcessing from './pages/BatchProcessing';
 import UpdatePage from './pages/UpdatePage';
+import HelpPage from './pages/HelpPage';
 import SetupWizard from './pages/SetupWizard';
 import ProtectedRoute from './components/ProtectedRoute';
 import Footer from './components/Footer';
@@ -182,6 +183,7 @@ function App() {
                 <Route path="/dashboard/settings" element={<Settings />} />
                 <Route path="/dashboard/batch" element={<BatchProcessing />} />
                 <Route path="/dashboard/updates" element={<UpdatePage />} />
+                <Route path="/dashboard/help" element={<HelpPage />} />
               </Route>
             </Routes>
           </main>

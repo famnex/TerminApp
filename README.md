@@ -83,9 +83,11 @@ A modern, self-hosted appointment scheduling application for schools, businesses
     cd server
     npm start
     ```
+    *The server now runs on port 3000 and serves the frontend automatically.*
 
 5.  **Access:**
-    Open `http://localhost:3000` in your browser.
+    Open `http://localhost:3000` (or your server IP) in the browser.
+    *Note: In production, you typically access the application via a Reverse Proxy (e.g., Nginx) on port 80/443, which forwards to port 3000.*
 
 ---
 
