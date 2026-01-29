@@ -622,4 +622,105 @@ router.delete('/departments/:id', async (req, res) => {
     }
 });
 
+// --- Update Management Routes ---
+
+router.get('/updates/check', async (req, res) => {
+    try {
+        const axios = require('axios');
+        const fs = require('fs');
+        const path = require('path');
+
+        // Function to compare semantic versions 
+        const compareVersions = (v1, v2) => {
+            const p1 = v1.replace('v', '').split('.').map(Number);
+            const p2 = v2.replace('v', '').split('.').map(Number);
+            for (let i = 0; i < 3; i++) {
+                if (p1[i] > p2[i]) return 1;
+                if (p1[i] < p2[i]) return -1;
+            }
+            return 0;
+        };
+
+        // Get current version
+        const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../../package.json'), 'utf8'));
+        const currentVersion = packageJson.version;
+
+        // Check GitHub
+        // Use user provided repo owner/name or deduce from git config if we want to be fancy.
+        // For now hardcoding or using params.
+        const REPO_OWNER = 'famnex';
+        const REPO_NAME = 'TerminApp';
+        const GITHUB_API = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/tags`;
+
+        const response = await axios.get(GITHUB_API);
+        const tags = response.data;
+
+        if (!tags || tags.length === 0) {
+            return res.json({ updateAvailable: false, currentVersion });
+        }
+
+        const latestTag = tags[0].name; // Usually first is latest
+        const latestVersion = latestTag.replace('v', '');
+
+        const updateAvailable = compareVersions(latestVersion, currentVersion) > 0;
+
+        res.json({
+            currentVersion,
+            latestVersion,
+            updateAvailable,
+            releaseUrl: `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/tag/${latestTag}`
+        });
+
+    } catch (err) {
+        console.error('Update Check Failed:', err.message);
+        res.status(500).json({ error: 'Failed to check for updates: ' + err.message });
+    }
+});
+
+router.post('/updates/install', async (req, res) => {
+    try {
+        const { spawn } = require('child_process');
+        const path = require('path');
+
+        const scriptPath = path.join(__dirname, '../../scripts/update.js');
+
+        console.log('Spawning update script:', scriptPath);
+
+        // Spawn detached process for update
+        const child = spawn('node', [scriptPath], {
+            detached: true,
+            stdio: 'ignore'
+        });
+
+        child.unref();
+
+        // Respond immediately before the server kills itself
+        res.json({ success: true, message: 'Update started. Server will restart shortly.' });
+
+    } catch (err) {
+        console.error('Update Installation Failed:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.post('/updates/revert', async (req, res) => {
+    try {
+        const { spawn } = require('child_process');
+        const path = require('path');
+
+        const scriptPath = path.join(__dirname, '../../scripts/revert.js');
+
+        // Spawn revert script
+        const child = spawn('node', [scriptPath], {
+            detached: true,
+            stdio: 'ignore'
+        });
+        child.unref();
+
+        res.json({ success: true, message: 'Revert started. Restoring database...' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

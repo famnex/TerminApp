@@ -12,7 +12,9 @@ import Availability from './pages/Availability';
 import Topics from './pages/Topics';
 import Settings from './pages/Settings';
 import BatchProcessing from './pages/BatchProcessing';
+import UpdatePage from './pages/UpdatePage';
 import SetupWizard from './pages/SetupWizard';
+import ProtectedRoute from './components/ProtectedRoute';
 import Footer from './components/Footer';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from './components/ui/sonner';
@@ -169,13 +171,18 @@ function App() {
               <Route path="/admin" element={<AdminLogin />} />
               <Route path="/recover" element={<RecoveryPage />} />
               <Route path="/cancel/:token" element={<CancellationPage />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/users" element={<AdminUserList />} />
-              <Route path="/dashboard/appointments" element={<Appointments />} />
-              <Route path="/dashboard/availability" element={<Availability />} />
-              <Route path="/dashboard/topics" element={<Topics />} />
-              <Route path="/dashboard/settings" element={<Settings />} />
-              <Route path="/dashboard/batch" element={<BatchProcessing />} />
+
+              {/* Protected Administration Routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dashboard/users" element={<AdminUserList />} />
+                <Route path="/dashboard/appointments" element={<Appointments />} />
+                <Route path="/dashboard/availability" element={<Availability />} />
+                <Route path="/dashboard/topics" element={<Topics />} />
+                <Route path="/dashboard/settings" element={<Settings />} />
+                <Route path="/dashboard/batch" element={<BatchProcessing />} />
+                <Route path="/dashboard/updates" element={<UpdatePage />} />
+              </Route>
             </Routes>
           </main>
           <Footer />

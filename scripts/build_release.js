@@ -45,12 +45,21 @@ for (const entry of entries) {
     if (entry === 'node_modules' || entry === '.git' || entry === '.env' || entry.includes('database.sqlite') || entry.includes('database.db')) continue;
     copyRecursiveSync(path.join(rootDir, 'server', entry), path.join(serverDest, entry));
 }
+console.log('Server files copied (including scripts).');
 
 // 4. Move Client Build to Server Public
 console.log('Integrating Client Build...');
 const clientBuildDir = path.join(rootDir, 'client', 'dist');
 const serverPublicDir = path.join(serverDest, 'public');
-fs.renameSync(clientBuildDir, serverPublicDir);
+
+// Use copy instead of rename to avoid EPERM/Cross-device issues
+if (fs.existsSync(serverPublicDir)) {
+    fs.rmSync(serverPublicDir, { recursive: true, force: true });
+}
+fs.mkdirSync(serverPublicDir, { recursive: true });
+
+copyRecursiveSync(clientBuildDir, serverPublicDir);
+console.log('Client build integrated.');
 
 // 5. Create ZIP
 console.log('Creating ZIP archive...');

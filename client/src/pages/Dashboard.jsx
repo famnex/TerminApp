@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Settings, Clock, Users, LogOut, Tags, Layers } from 'lucide-react';
+import { LayoutDashboard, Calendar, Settings, Clock, Users, LogOut, Tags, Layers, RefreshCw } from 'lucide-react';
 import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 
@@ -126,6 +126,24 @@ const Dashboard = () => {
                         <CardContent className="pt-4">
                             <CardTitle className="text-xl mb-2 group-hover:text-indigo-600 transition-colors">Sammelverarbeitung</CardTitle>
                             <p className="text-sm text-muted-foreground">Regeln für Themen und Verfügbarkeiten erstellen.</p>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Updates Card (Admin Only) */}
+                {user?.isAdmin && (
+                    <Card
+                        onClick={() => navigate('/dashboard/updates')}
+                        className="cursor-pointer hover:border-pink-500/50 transition-all hover:shadow-md group"
+                    >
+                        <CardHeader className="space-y-0 pb-2">
+                            <div className="p-3 w-fit bg-pink-50 dark:bg-pink-900/20 rounded-xl text-pink-600 dark:text-pink-400 group-hover:bg-pink-600 group-hover:text-white transition-colors duration-300">
+                                <RefreshCw size={24} />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <CardTitle className="text-xl mb-2 group-hover:text-pink-600 transition-colors">System Updates</CardTitle>
+                            <p className="text-sm text-muted-foreground">App-Version prüfen, Updates installieren und verwalten.</p>
                         </CardContent>
                     </Card>
                 )}

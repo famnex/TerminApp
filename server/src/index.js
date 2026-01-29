@@ -21,6 +21,9 @@ const { authenticateToken } = require('./middleware/auth');
 const publicRoutes = require('./routes/public');
 app.use('/api/public', publicRoutes);
 
+const versionRoutes = require('./routes/version');
+app.use('/api/public/version', versionRoutes);
+
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 

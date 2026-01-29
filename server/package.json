@@ -1,6 +1,6 @@
 {
     "name": "appointment-server",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Backend for Appointment Web App",
     "main": "src/index.js",
     "scripts": {
@@ -9,6 +9,7 @@
     },
     "dependencies": {
         "activedirectory2": "^2.2.0",
+        "axios": "^1.13.4",
         "bcrypt": "^6.0.0",
         "bcryptjs": "^3.0.3",
         "cors": "^2.8.5",
