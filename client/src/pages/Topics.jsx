@@ -188,8 +188,8 @@ const Topics = () => {
                                     id="duration"
                                     type="number"
                                     className="pl-9"
-                                    min="5"
-                                    step="5"
+                                    min="1"
+                                    step="1"
                                     value={formData.durationMinutes}
                                     onChange={e => setFormData({ ...formData, durationMinutes: parseInt(e.target.value) })}
                                     required
