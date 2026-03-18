@@ -659,8 +659,17 @@ router.get('/updates/check', async (req, res) => {
             return res.json({ updateAvailable: false, currentVersion });
         }
 
-        const latestTag = tags[0].name; // Usually first is latest
-        const latestVersion = latestTag.replace('v', '');
+        let latestTag = tags[0].name;
+        let latestVersion = latestTag.replace('v', '');
+
+        // Find the absolute highest version from all available tags
+        for (const tag of tags) {
+            const version = tag.name.replace('v', '');
+            if (compareVersions(version, latestVersion) > 0) {
+                latestVersion = version;
+                latestTag = tag.name;
+            }
+        }
 
         const updateAvailable = compareVersions(latestVersion, currentVersion) > 0;
 
