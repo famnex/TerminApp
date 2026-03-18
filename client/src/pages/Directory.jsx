@@ -56,7 +56,7 @@ const Directory = () => {
         toast.success("Link kopiert!");
     };
 
-    const filteredUsers = users.filter(user => {
+    const filteredUsers = (Array.isArray(users) ? users : []).filter(user => {
         const term = searchTerm.toLowerCase();
         const matchesSearch = (
             user.displayName?.toLowerCase().includes(term) ||
@@ -97,7 +97,7 @@ const Directory = () => {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Alle Abteilungen</SelectItem>
-                            {departments.map(d => (
+                            {(Array.isArray(departments) ? departments : []).map(d => (
                                 <SelectItem key={d.id} value={d.id.toString()}>{d.name}</SelectItem>
                             ))}
                         </SelectContent>

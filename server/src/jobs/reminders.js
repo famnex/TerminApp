@@ -29,8 +29,8 @@ function startReminderJob() {
                     status: 'confirmed',
                     reminderSent: false,
                     slotStartTime: {
-                        [Op.gte]: reminderTimeStart.toISOString().replace('T', ' ').substring(0, 19),
-                        [Op.lt]: reminderTimeEnd.toISOString().replace('T', ' ').substring(0, 19)
+                        [Op.gte]: reminderTimeStart,
+                        [Op.lt]: reminderTimeEnd
                     }
                 }
             });
