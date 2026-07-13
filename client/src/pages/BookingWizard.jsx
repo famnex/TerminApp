@@ -23,7 +23,11 @@ const BookingWizard = () => {
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [availableSlots, setAvailableSlots] = useState([]);
-    const [customerDetails, setCustomerDetails] = useState({ name: '', email: '', phone: '' });
+    const [customerDetails, setCustomerDetails] = useState({
+        name: localStorage.getItem('sso_prefill_name') || '',
+        email: localStorage.getItem('sso_prefill_email') || '',
+        phone: ''
+    });
     const [bookingResult, setBookingResult] = useState(null);
 
     // Calendar State

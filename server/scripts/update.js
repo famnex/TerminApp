@@ -180,6 +180,15 @@ try {
     }
 
     log('Update completed successfully.');
+    
+    // Attempt PM2 restart if available
+    try {
+        log('Attempting PM2 reload/restart...');
+        execSync('pm2 reload all || pm2 restart all', { stdio: 'ignore' });
+    } catch (pm2Err) {
+        log('PM2 restart not available or failed: ' + pm2Err.message);
+    }
+
     log('Exiting process to trigger restart...');
     process.exit(0);
 

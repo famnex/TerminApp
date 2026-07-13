@@ -146,6 +146,46 @@ router.post('/sso', async (req, res) => {
         const displayName = decoded.displayName || decoded.name || username;
         const email = decoded.email || null;
         const isAdmin = decoded.isAdmin || decoded.admin || (decoded.role === 'admin') || false;
+        const userGroups = decoded.groups || [];
+
+        // Check if user is allowed by Group Filter
+        const groupFilterSetting = await GlobalSettings.findByPk('ldap_groupFilter');
+        const groupFilter = groupFilterSetting ? groupFilterSetting.value : null;
+
+        const matchesGroupFilter = (groupsList, filter) => {
+            if (!filter || filter.trim() === '') return true; // Empty filter = allowed
+            if (!groupsList || !Array.isArray(groupsList)) return false;
+
+            // Extract DN part if formatted like "(memberOf=CN=Lehrer,OU=Groups,DC=schule,DC=local)"
+            let targetDN = filter;
+            const memberOfMatch = filter.match(/memberOf=([^)]+)/i);
+            if (memberOfMatch) {
+                targetDN = memberOfMatch[1];
+            }
+            targetDN = targetDN.replace(/[()]/g, '').trim().toLowerCase();
+
+            return groupsList.some(g => {
+                const groupStr = g.toLowerCase();
+                if (groupStr === targetDN) return true;
+                if (targetDN.startsWith('cn=')) {
+                    return groupStr.includes(targetDN);
+                } else {
+                    return groupStr.includes(`cn=${targetDN}`) || groupStr === targetDN;
+                }
+            });
+        };
+
+        if (!matchesGroupFilter(userGroups, groupFilter)) {
+            console.log(`SSO Login: User '${username}' not allowed by group filter '${groupFilter}'.`);
+            return res.json({
+                success: false,
+                notAllowed: true,
+                user: {
+                    displayName,
+                    email
+                }
+            });
+        }
 
         // Find or create user
         let user = await User.findOne({ where: { username } });

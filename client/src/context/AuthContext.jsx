@@ -10,11 +10,19 @@ export const AuthProvider = ({ children }) => {
 
     const loginSso = async (ssoToken) => {
         const res = await api.post('/auth/sso', { token: ssoToken });
-        const { token, user } = res.data;
-        localStorage.setItem('token', token);
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        setUser(user);
-        return user;
+        if (res.data.success) {
+            const { token, user } = res.data;
+            localStorage.setItem('token', token);
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            setUser(user);
+            return { success: true, user };
+        } else if (res.data.notAllowed) {
+            // Store pre-fill info for guests / not allowed users
+            localStorage.setItem('sso_prefill_name', res.data.user.displayName || '');
+            localStorage.setItem('sso_prefill_email', res.data.user.email || '');
+            return { success: false, notAllowed: true };
+        }
+        throw new Error(res.data.error || 'SSO Login failed');
     };
 
     useEffect(() => {
@@ -37,12 +45,19 @@ export const AuthProvider = ({ children }) => {
                 const ssoToken = urlParams.get(ssoParam);
 
                 if (ssoEnabled && ssoToken) {
-                    await loginSso(ssoToken);
+                    const loginResult = await loginSso(ssoToken);
                     
                     // Clear query parameter from the URL
                     const url = new URL(window.location.href);
                     url.searchParams.delete(ssoParam);
                     window.history.replaceState({}, document.title, url.pathname + url.search);
+                    
+                    if (loginResult.success) {
+                        // Redirect allowed users to the dashboard
+                        if (window.location.hash === '' || window.location.hash === '#/') {
+                            window.location.hash = '#/dashboard';
+                        }
+                    }
                     
                     setLoading(false);
                     return;
@@ -73,6 +88,14 @@ export const AuthProvider = ({ children }) => {
 
         handleAuth();
     }, []);
+
+    // Sync logged-in user details to localStorage for booking pre-filling
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem('sso_prefill_name', user.displayName || '');
+            localStorage.setItem('sso_prefill_email', user.email || '');
+        }
+    }, [user]);
 
     const login = async (username, password) => {
         const res = await api.post('/auth/login', { username, password });
