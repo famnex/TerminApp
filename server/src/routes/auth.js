@@ -143,7 +143,20 @@ router.post('/sso', async (req, res) => {
             return res.status(400).json({ error: 'SSO-Token enthält keinen gültigen Benutzernamen (username/sub)' });
         }
 
-        const displayName = decoded.displayName || decoded.name || username;
+        let displayName = decoded.displayName || 
+                          decoded.name || 
+                          decoded.cn || 
+                          (decoded.given_name && decoded.family_name ? `${decoded.given_name} ${decoded.family_name}` : null) || 
+                          username;
+
+        // Heuristic: If displayName is same as username and contains a dot (e.g. s.fleischer), format it as S. Fleischer
+        if (displayName === username && username.includes('.')) {
+            displayName = username
+                .split('.')
+                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(' ');
+        }
+
         const email = decoded.email || null;
         const isAdmin = decoded.isAdmin || decoded.admin || (decoded.role === 'admin') || false;
         const userGroups = decoded.groups || [];

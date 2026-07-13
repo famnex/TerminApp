@@ -45,19 +45,12 @@ export const AuthProvider = ({ children }) => {
                 const ssoToken = urlParams.get(ssoParam);
 
                 if (ssoEnabled && ssoToken) {
-                    const loginResult = await loginSso(ssoToken);
+                    await loginSso(ssoToken);
                     
                     // Clear query parameter from the URL
                     const url = new URL(window.location.href);
                     url.searchParams.delete(ssoParam);
                     window.history.replaceState({}, document.title, url.pathname + url.search);
-                    
-                    if (loginResult.success) {
-                        // Redirect allowed users to the dashboard
-                        if (window.location.hash === '' || window.location.hash === '#/') {
-                            window.location.hash = '#/dashboard';
-                        }
-                    }
                     
                     setLoading(false);
                     return;
