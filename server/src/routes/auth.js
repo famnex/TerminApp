@@ -131,7 +131,8 @@ router.post('/sso', async (req, res) => {
 
         let decoded;
         try {
-            decoded = jwt.verify(token, ssoSecret);
+            // Allow 5 minutes clock tolerance to prevent fails due to clock drift on tight token expirations (e.g. 1 minute)
+            decoded = jwt.verify(token, ssoSecret, { clockTolerance: 300 });
         } catch (jwtErr) {
             console.error('SSO JWT Verification failed:', jwtErr.message);
             return res.status(401).json({ error: 'Ungültiges SSO-Token: ' + jwtErr.message });
@@ -144,7 +145,7 @@ router.post('/sso', async (req, res) => {
 
         const displayName = decoded.displayName || decoded.name || username;
         const email = decoded.email || null;
-        const isAdmin = decoded.isAdmin || decoded.admin || false;
+        const isAdmin = decoded.isAdmin || decoded.admin || (decoded.role === 'admin') || false;
 
         // Find or create user
         let user = await User.findOne({ where: { username } });
