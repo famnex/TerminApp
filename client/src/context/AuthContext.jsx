@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
                 const settingsRes = await api.get('/public/settings');
                 loadedSettings = settingsRes.data;
                 setPublicSettings(loadedSettings);
-                ssoEnabled = loadedSettings.sso_enabled === 'true' || loadedSettings.sso_enabled === true;
+                ssoEnabled = loadedSettings.sso_enabled === 'true' || loadedSettings.sso_enabled === true || loadedSettings.sso_enabled === '1' || loadedSettings.sso_enabled === 1;
                 ssoParam = loadedSettings.sso_jwt_param || 'sso_token';
             } catch (err) {
                 console.error("Failed to load public settings", err);

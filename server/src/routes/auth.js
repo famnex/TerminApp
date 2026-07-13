@@ -119,7 +119,7 @@ router.post('/sso', async (req, res) => {
         const ssoEnabledSetting = await GlobalSettings.findByPk('sso_enabled');
         const ssoSecretSetting = await GlobalSettings.findByPk('sso_jwt_secret');
 
-        const ssoEnabled = ssoEnabledSetting && (ssoEnabledSetting.value === 'true' || ssoEnabledSetting.value === true);
+        const ssoEnabled = ssoEnabledSetting && (ssoEnabledSetting.value === 'true' || ssoEnabledSetting.value === true || ssoEnabledSetting.value === '1' || ssoEnabledSetting.value === 1);
         if (!ssoEnabled) {
             return res.status(400).json({ error: 'SSO ist deaktiviert' });
         }
