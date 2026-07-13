@@ -180,6 +180,7 @@ try {
     }
 
     log('Update completed successfully.');
+    log('Exiting process to trigger restart...');
     
     // Attempt PM2 restart if available
     try {
@@ -189,7 +190,6 @@ try {
         log('PM2 restart not available or failed: ' + pm2Err.message);
     }
 
-    log('Exiting process to trigger restart...');
     process.exit(0);
 
 } catch (error) {
