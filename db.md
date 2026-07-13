@@ -10,7 +10,7 @@ Diese Datei dokumentiert die Struktur der Datenbank für die TerminApp.
 - `password`: STRING (Nullable - for LDAP users)
 - `displayName`: STRING (Not Null)
 - `email`: STRING
-- `authMethod`: ENUM('local', 'ldap') (Default: 'local')
+- `authMethod`: ENUM('local', 'ldap', 'sso') (Default: 'local')
 - `position`: STRING
 - `profileImage`: STRING
 - `showEmail`: BOOLEAN (Default: true)
@@ -65,6 +65,13 @@ Diese Datei dokumentiert die Struktur der Datenbank für die TerminApp.
 - `isEncrypted`: BOOLEAN (Default: false)
 - `createdAt`: DATETIME
 - `updatedAt`: DATETIME
+
+- Bekannte Schlüssel für SSO-JWT-Konfiguration:
+  - `sso_enabled`: Gibt an, ob SSO via JWT aktiviert ist (`'true'` oder `'false'`).
+  - `sso_jwt_secret`: Das Shared-Secret zur Verifizierung des SSO-JWT-Tokens.
+  - `sso_jwt_param`: Der Name des URL-Parameters für den Token (Standard: `'sso_token'`).
+  - `sso_logout_redirect`: URL, zu der SSO-Benutzer nach dem Abmelden weitergeleitet werden.
+  - `sso_logout_label`: Benutzerdefinierter Text für den Abmeldebutton.
 
 ### TimeOffs
 - `id`: INTEGER (Primary Key, Auto-increment)

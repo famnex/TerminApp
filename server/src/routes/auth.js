@@ -96,9 +96,109 @@ router.get('/me', async (req, res) => {
         });
 
         if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json(user);
+        
+        // Pass the isSso flag from decoded token down to the client
+        const userJson = user.toJSON();
+        userJson.isSso = !!decoded.isSso;
+
+        res.json(userJson);
     } catch (err) {
         res.status(401).json({ error: 'Invalid token' });
+    }
+});
+
+// POST /api/auth/sso (Login via SSO JWT)
+router.post('/sso', async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) {
+            return res.status(400).json({ error: 'SSO Token fehlt' });
+        }
+
+        const { GlobalSettings } = require('../models');
+        const ssoEnabledSetting = await GlobalSettings.findByPk('sso_enabled');
+        const ssoSecretSetting = await GlobalSettings.findByPk('sso_jwt_secret');
+
+        const ssoEnabled = ssoEnabledSetting && (ssoEnabledSetting.value === 'true' || ssoEnabledSetting.value === true);
+        if (!ssoEnabled) {
+            return res.status(400).json({ error: 'SSO ist deaktiviert' });
+        }
+
+        const ssoSecret = ssoSecretSetting ? ssoSecretSetting.value : null;
+        if (!ssoSecret) {
+            return res.status(500).json({ error: 'SSO-JWT-Geheimnis ist nicht konfiguriert' });
+        }
+
+        let decoded;
+        try {
+            decoded = jwt.verify(token, ssoSecret);
+        } catch (jwtErr) {
+            console.error('SSO JWT Verification failed:', jwtErr.message);
+            return res.status(401).json({ error: 'Ungültiges SSO-Token: ' + jwtErr.message });
+        }
+
+        const username = decoded.username || decoded.sub;
+        if (!username) {
+            return res.status(400).json({ error: 'SSO-Token enthält keinen gültigen Benutzernamen (username/sub)' });
+        }
+
+        const displayName = decoded.displayName || decoded.name || username;
+        const email = decoded.email || null;
+        const isAdmin = decoded.isAdmin || decoded.admin || false;
+
+        // Find or create user
+        let user = await User.findOne({ where: { username } });
+        if (!user) {
+            console.log(`Auto-provisioning new SSO user: ${username}`);
+            user = await User.create({
+                username,
+                displayName,
+                email,
+                authMethod: 'sso',
+                isAdmin: isAdmin
+            });
+        } else {
+            // Update existing user attributes if they changed
+            let needsSave = false;
+            if (user.displayName !== displayName) {
+                user.displayName = displayName;
+                needsSave = true;
+            }
+            if (email && user.email !== email) {
+                user.email = email;
+                needsSave = true;
+            }
+            if (decoded.isAdmin !== undefined && user.isAdmin !== isAdmin) {
+                user.isAdmin = isAdmin;
+                needsSave = true;
+            }
+            if (needsSave) {
+                await user.save();
+            }
+        }
+
+        // Generate app session token with isSso: true
+        const appToken = jwt.sign(
+            { id: user.id, username: user.username, isAdmin: user.isAdmin, isSso: true },
+            JWT_SECRET,
+            { expiresIn: '8h' }
+        );
+
+        res.json({
+            success: true,
+            token: appToken,
+            user: {
+                id: user.id,
+                username: user.username,
+                displayName: user.displayName,
+                isAdmin: user.isAdmin,
+                isSso: true
+            }
+        });
+
+    } catch (err) {
+        console.error('SSO Login Route Error:', err);
+        res.status(500).json({ error: 'Serverfehler bei der SSO-Anmeldung' });
     }
 });
 

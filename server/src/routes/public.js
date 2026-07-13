@@ -66,7 +66,15 @@ router.get('/settings', async (req, res) => {
         const { GlobalSettings } = require('../models');
         const settings = await GlobalSettings.findAll({
             where: {
-                key: ['school_logo', 'app_title', 'primary_color']
+                key: [
+                    'school_logo', 
+                    'app_title', 
+                    'primary_color', 
+                    'sso_enabled', 
+                    'sso_jwt_param', 
+                    'sso_logout_redirect', 
+                    'sso_logout_label'
+                ]
             }
         });
 

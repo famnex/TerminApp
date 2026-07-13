@@ -21,7 +21,7 @@ const User = sequelize.define('User', {
         allowNull: true,
     },
     authMethod: {
-        type: DataTypes.ENUM('local', 'ldap'),
+        type: DataTypes.ENUM('local', 'ldap', 'sso'),
         defaultValue: 'local',
     },
     position: {

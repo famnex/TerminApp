@@ -6,13 +6,20 @@ import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 
 const Dashboard = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, publicSettings } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = () => {
+        const isSsoUser = user?.isSso;
         logout();
-        navigate('/');
+        if (!isSsoUser || !publicSettings?.sso_logout_redirect) {
+            navigate('/');
+        }
     };
+
+    const logoutLabel = (user?.isSso && publicSettings?.sso_logout_label)
+        ? publicSettings.sso_logout_label
+        : 'Abmelden';
 
     return (
         <div className="animate-fade-in-up max-w-5xl mx-auto space-y-8 pb-20">
@@ -22,7 +29,7 @@ const Dashboard = () => {
                     <h1 className="text-3xl font-bold tracking-tight">Willkommen zurück, <span className="text-primary">{user?.displayName}</span></h1>
                 </div>
                 <Button variant="ghost" onClick={handleLogout} className="text-muted-foreground hover:text-destructive gap-2">
-                    <LogOut size={20} /> Abmelden
+                    <LogOut size={20} /> {logoutLabel}
                 </Button>
             </div>
 

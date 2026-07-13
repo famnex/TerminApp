@@ -210,7 +210,7 @@ const Settings = () => {
 
             {/* Config Tabs */}
             <div className="flex space-x-1 rounded-xl bg-muted p-1 w-full md:w-auto md:inline-flex">
-                {['ldap', 'smtp', 'general'].map((tab) => (
+                {['ldap', 'smtp', 'sso', 'general'].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -219,7 +219,7 @@ const Settings = () => {
                             ${activeTab === tab ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10'}
                         `}
                     >
-                        {tab === 'ldap' ? 'LDAP' : tab === 'smtp' ? 'SMTP' : 'Schule / Allgemein'}
+                        {tab === 'ldap' ? 'LDAP' : tab === 'smtp' ? 'SMTP' : tab === 'sso' ? 'SSO (JWT)' : 'Schule / Allgemein'}
                     </button>
                 ))}
             </div>
@@ -231,11 +231,13 @@ const Settings = () => {
                             <CardTitle>
                                 {activeTab === 'ldap' && 'LDAP-Konfiguration'}
                                 {activeTab === 'smtp' && 'SMTP-Konfiguration'}
+                                {activeTab === 'sso' && 'SSO (JWT) Konfiguration'}
                                 {activeTab === 'general' && 'Allgemeine Einstellungen'}
                             </CardTitle>
                             <CardDescription className="mt-1.5">
                                 {activeTab === 'ldap' && 'Verbinden Sie das System mit Ihrem LDAP-Server.'}
                                 {activeTab === 'smtp' && 'Einstellungen für den E-Mail-Versand.'}
+                                {activeTab === 'sso' && 'Erlauben Sie die automatische Anmeldung per SSO über signierte JWT-Tokens.'}
                                 {activeTab === 'general' && 'Informationen zur Schule und Anwendung.'}
                             </CardDescription>
                         </div>
@@ -306,6 +308,27 @@ const Settings = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t">
                                     {renderField('smtp_from_email', 'Absender E-Mail Adresse', 'email', 'noreply@schule.de')}
                                     {renderField('smtp_from_name', 'Absender Name', 'text', 'Terminbuchung System')}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* SSO CONTENT */}
+                        {activeTab === 'sso' && (
+                            <div className="space-y-6 animate-in fade-in duration-300">
+                                {renderToggle('sso_enabled', 'SSO (JWT) aktivieren')}
+
+                                <div className="space-y-4 pt-2 border-t">
+                                    <h3 className="font-semibold text-sm text-foreground">JWT SSO Einstellungen</h3>
+                                    
+                                    {renderField('sso_jwt_secret', 'SSO JWT Secret (Shared Secret für HS256 / RS256 Public Key)', 'password')}
+                                    {renderField('sso_jwt_param', 'URL Query Parameter Name (Standard: sso_token)', 'text', 'sso_token')}
+                                </div>
+
+                                <div className="space-y-4 pt-2 border-t">
+                                    <h3 className="font-semibold text-sm text-foreground">Logout Einstellungen</h3>
+                                    
+                                    {renderField('sso_logout_redirect', 'Abmelde-Weiterleitungs-URL (z. B. https://sso.schule.de/logout)', 'text', 'https://...')}
+                                    {renderField('sso_logout_label', 'Text für den Abmeldebutton (Standard: Abmelden)', 'text', 'Abmelden')}
                                 </div>
                             </div>
                         )}
