@@ -335,7 +335,7 @@ const BookingWizard = () => {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="email">Email-Adresse *</Label>
+                                        <Label htmlFor="email">E-Mail-Adresse *</Label>
                                         <div className="relative">
                                             <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                                             <Input

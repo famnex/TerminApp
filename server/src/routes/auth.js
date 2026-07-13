@@ -245,6 +245,7 @@ router.post('/sso', async (req, res) => {
                 id: user.id,
                 username: user.username,
                 displayName: user.displayName,
+                email: user.email,
                 isAdmin: user.isAdmin,
                 isSso: true
             }
