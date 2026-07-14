@@ -14,11 +14,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3005',
+        target: 'http://localhost:3010',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'http://localhost:3005',
+        target: 'http://localhost:3010',
         changeOrigin: true,
       }
     }
