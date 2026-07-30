@@ -14,16 +14,25 @@ router.post('/login', async (req, res) => {
 
         // Try to find user in local DB
         let user = await User.findOne({ where: { username } });
+        let localAuthSuccess = false;
 
-        // If user exists and is configured for LOCAL auth, verify password locally
-        if (user && user.authMethod === 'local') {
+        // Try local authentication first if a local password exists
+        if (user && user.password && user.password.trim() !== '') {
             const match = await bcrypt.compare(password, user.password);
-            if (!match) {
-                console.log(`Login Failed: Local user '${username}' invalid password.`);
-                return res.status(401).json({ error: 'Ungültige Zugangsdaten' });
+            if (match) {
+                localAuthSuccess = true;
+                if (user.authMethod !== 'local') {
+                    user.authMethod = 'local';
+                    await user.save();
+                    console.log(`Login: '${username}' logged in locally. Auth method updated to local.`);
+                }
             }
+        }
+
+        if (user && localAuthSuccess) {
+            // Local login successful, user is already loaded
         } else {
-            // User does not exist OR is not 'local' -> Attempt LDAP Auth
+            // Fallback to LDAP Auth
             console.log(`Login: Attempting LDAP Auth for '${username}'...`);
             const ldapUser = await authenticateLDAP(username, password);
 
@@ -40,10 +49,10 @@ router.post('/login', async (req, res) => {
                         isAdmin: false // Default to standard user
                     });
                 } else {
-                    // Update existing user with latest info from LDAP
+                    // Update existing user with latest info from LDAP, but do NOT overwrite displayName
                     let needsSave = false;
-                    if (user.displayName !== (ldapUser.displayName || ldapUser.cn)) {
-                        user.displayName = ldapUser.displayName || ldapUser.cn || username;
+                    if (user.authMethod !== 'ldap') {
+                        user.authMethod = 'ldap';
                         needsSave = true;
                     }
                     if (ldapUser.mail && user.email !== ldapUser.mail) {
@@ -53,9 +62,7 @@ router.post('/login', async (req, res) => {
                     if (needsSave) await user.save();
                 }
             } else {
-                console.log(`Login Failed: LDAP Auth failed for '${username}'.`);
-                // LDAP Failed
-                // If user existed (but was LDAP auth), or didn't exist -> Invalid Credentials
+                console.log(`Login Failed: Local & LDAP Auth failed for '${username}'.`);
                 return res.status(401).json({ error: 'Ungültige Zugangsdaten' });
             }
         }
@@ -212,10 +219,10 @@ router.post('/sso', async (req, res) => {
                 isAdmin: isAdmin
             });
         } else {
-            // Update existing user attributes if they changed
+            // Update existing user attributes if they changed, but do NOT overwrite displayName
             let needsSave = false;
-            if (user.displayName !== displayName) {
-                user.displayName = displayName;
+            if (user.authMethod !== 'sso') {
+                user.authMethod = 'sso';
                 needsSave = true;
             }
             if (email && user.email !== email) {

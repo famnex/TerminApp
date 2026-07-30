@@ -569,14 +569,12 @@ const AdminUserList = () => {
 
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label>Anzeigename {isLdap && <span className="text-xs text-muted-foreground">(Gesperrt durch LDAP)</span>}</Label>
+                                        <Label>Anzeigename</Label>
                                         <Input
                                             name="displayName"
                                             required
                                             value={formData.displayName}
                                             onChange={handleInputChange}
-                                            disabled={isLdap}
-                                            className={isLdap ? "bg-muted" : ""}
                                         />
                                     </div>
 
