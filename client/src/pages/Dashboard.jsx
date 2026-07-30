@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Settings, Clock, Users, LogOut, Tags, Layers, RefreshCw, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Calendar, Settings, Clock, Users, LogOut, Tags, Layers, RefreshCw, BookOpen, User } from 'lucide-react';
 import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 
@@ -34,6 +34,22 @@ const Dashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                {/* Profile Card */}
+                <Card
+                    onClick={() => navigate('/dashboard/profile')}
+                    className="cursor-pointer hover:border-primary/50 transition-all hover:shadow-md group"
+                >
+                    <CardHeader className="space-y-0 pb-2">
+                        <div className="p-3 w-fit bg-primary/10 rounded-xl text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+                            <User size={24} />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                        <CardTitle className="text-xl mb-2 group-hover:text-primary transition-colors">Mein Profil</CardTitle>
+                        <p className="text-sm text-muted-foreground">Verwalte dein Profilbild, Kontaktdaten, Raum-Nummer und deine Abteilungszuordnung.</p>
+                    </CardContent>
+                </Card>
 
                 {/* Appointments Card */}
                 <Card

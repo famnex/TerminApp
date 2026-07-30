@@ -15,6 +15,7 @@ import BatchProcessing from './pages/BatchProcessing';
 import UpdatePage from './pages/UpdatePage';
 import HelpPage from './pages/HelpPage';
 import SetupWizard from './pages/SetupWizard';
+import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 import Footer from './components/Footer';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -176,6 +177,7 @@ function App() {
               {/* Protected Administration Routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dashboard/profile" element={<Profile />} />
                 <Route path="/dashboard/users" element={<AdminUserList />} />
                 <Route path="/dashboard/appointments" element={<Appointments />} />
                 <Route path="/dashboard/availability" element={<Availability />} />

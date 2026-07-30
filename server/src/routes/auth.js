@@ -98,8 +98,10 @@ router.get('/me', async (req, res) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
+        const { Department } = require('../models');
         const user = await User.findByPk(decoded.id, {
-            attributes: ['id', 'username', 'displayName', 'isAdmin', 'email']
+            attributes: ['id', 'username', 'displayName', 'isAdmin', 'email', 'position', 'location', 'profileImage', 'showEmail'],
+            include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
         });
 
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -261,6 +263,157 @@ router.post('/sso', async (req, res) => {
     } catch (err) {
         console.error('SSO Login Route Error:', err);
         res.status(500).json({ error: 'Serverfehler bei der SSO-Anmeldung' });
+    }
+});
+
+// PUT /api/auth/profile (Update current user's profile)
+router.put('/profile', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token provided' });
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user = await User.findByPk(decoded.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const { displayName, email, position, location, profileImage, showEmail, departmentId } = req.body;
+
+        // Update basic info
+        user.displayName = displayName || user.displayName;
+        user.email = email || user.email;
+        user.position = position !== undefined ? position : user.position;
+        user.location = location !== undefined ? location : user.location;
+        if (profileImage !== undefined) user.profileImage = profileImage;
+        if (showEmail !== undefined) user.showEmail = showEmail;
+
+        await user.save();
+
+        // Update department association
+        if (departmentId !== undefined) {
+            const { Department, BatchConfig, Topic, Availability } = require('../models');
+            
+            // Get current user's departments to find changes
+            const currentDepts = await user.getDepartments({ attributes: ['id'] });
+            const currentDeptIds = currentDepts.map(d => d.id);
+            
+            const targetDeptId = parseInt(departmentId) || null;
+            const newDeptIds = targetDeptId ? [targetDeptId] : [];
+
+            // Set new departments
+            await user.setDepartments(newDeptIds);
+
+            // Sync logic if user changed their department
+            const addedDeptIds = newDeptIds.filter(id => !currentDeptIds.includes(id));
+            const removedDeptIds = currentDeptIds.filter(id => !newDeptIds.includes(id));
+
+            // Sync BatchConfigs for newly added department
+            for (const deptId of addedDeptIds) {
+                const batchConfigs = await BatchConfig.findAll({
+                    where: { targetType: 'department', applyToFuture: true },
+                    include: [{ model: Department, where: { id: deptId }, required: true }]
+                });
+
+                for (const batch of batchConfigs) {
+                    const Model = batch.type === 'topic' ? Topic : Availability;
+                    // Check if already created
+                    const exists = await Model.findOne({ where: { userId: user.id, batchConfigId: batch.id } });
+                    if (!exists) {
+                        await Model.create({
+                            ...batch.configData,
+                            userId: user.id,
+                            batchConfigId: batch.id
+                        });
+                    }
+                }
+            }
+
+            // Sync BatchConfigs for removed departments
+            for (const deptId of removedDeptIds) {
+                const batchConfigs = await BatchConfig.findAll({
+                    where: { targetType: 'department', applyToFuture: true },
+                    include: [{ model: Department, where: { id: deptId }, required: true }]
+                });
+
+                for (const batch of batchConfigs) {
+                    // Check if user is still in another department that has this batch config
+                    const userDepts = await user.getDepartments({
+                        include: [{ model: Department, include: [{ model: BatchConfig, where: { id: batch.id } }] }]
+                    });
+                    const stillCovered = userDepts.some(d => d.BatchConfigs && d.BatchConfigs.length > 0);
+
+                    if (!stillCovered) {
+                        const Model = batch.type === 'topic' ? Topic : Availability;
+                        await Model.destroy({ where: { userId: user.id, batchConfigId: batch.id } });
+                    }
+                }
+            }
+        }
+
+        // Reload user with new associations
+        const reloadedUser = await User.findByPk(user.id, {
+            attributes: ['id', 'username', 'displayName', 'isAdmin', 'email', 'position', 'location', 'profileImage', 'showEmail'],
+            include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
+        });
+
+        res.json({ success: true, user: reloadedUser });
+    } catch (err) {
+        console.error('Profile Update Error:', err);
+        res.status(500).json({ error: 'Server Fehler beim Aktualisieren des Profils: ' + err.message });
+    }
+});
+
+// POST /api/auth/upload-image (Upload profile image for any logged-in user)
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, '../../uploads');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+    fileFilter: (req, file, cb) => {
+        const filetypes = /jpeg|jpg|png|gif|webp/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error("Nur Bilder erlaubt!"));
+    }
+});
+
+router.post('/upload-image', (req, res, next) => {
+    // Authenticate token manually
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token provided' });
+    try {
+        jwt.verify(token, JWT_SECRET);
+        next();
+    } catch (e) {
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+}, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Keine Datei hochgeladen' });
+        }
+        const relativePath = 'uploads/' + req.file.filename;
+        res.json({ success: true, path: relativePath });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
