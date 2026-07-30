@@ -33,26 +33,30 @@ const Profile = () => {
     useEffect(() => {
         const loadProfileData = async () => {
             try {
-                // Fetch public departments
-                const deptRes = await api.get('/public/departments');
+                // Fetch public departments and fresh profile details in parallel
+                const [deptRes, meRes] = await Promise.all([
+                    api.get('/public/departments'),
+                    api.get('/auth/me')
+                ]);
+
                 setDepartments(deptRes.data);
+                const currentUserData = meRes.data;
+                setUser(currentUserData);
 
-                if (user) {
-                    const currentDeptId = user.Departments && user.Departments.length > 0
-                        ? user.Departments[0].id.toString()
-                        : '';
+                const currentDeptId = currentUserData.Departments && currentUserData.Departments.length > 0
+                    ? currentUserData.Departments[0].id.toString()
+                    : '';
 
-                    setFormData({
-                        displayName: user.displayName || '',
-                        email: user.email || '',
-                        position: user.position || '',
-                        location: user.location || '',
-                        showEmail: user.showEmail !== false,
-                        profileImage: user.profileImage || '',
-                        departmentId: currentDeptId,
-                        bookingPageActive: user.bookingPageActive === true
-                    });
-                }
+                setFormData({
+                    displayName: currentUserData.displayName || '',
+                    email: currentUserData.email || '',
+                    position: currentUserData.position || '',
+                    location: currentUserData.location || '',
+                    showEmail: currentUserData.showEmail !== false,
+                    profileImage: currentUserData.profileImage || '',
+                    departmentId: currentDeptId,
+                    bookingPageActive: currentUserData.bookingPageActive === true
+                });
             } catch (err) {
                 console.error("Failed to load profile data", err);
                 toast.error("Fehler beim Laden der Profildaten.");
@@ -62,7 +66,7 @@ const Profile = () => {
         };
 
         loadProfileData();
-    }, [user]);
+    }, []);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;

@@ -7,6 +7,14 @@ const { User, Department } = require('../models');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_change_me';
 
+const getFullUserData = async (userId) => {
+    const user = await User.findByPk(userId, {
+        attributes: ['id', 'username', 'displayName', 'isAdmin', 'email', 'position', 'location', 'profileImage', 'showEmail', 'bookingPageActive'],
+        include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
+    });
+    return user ? user.toJSON() : null;
+};
+
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
     try {
@@ -74,15 +82,11 @@ router.post('/login', async (req, res) => {
             { expiresIn: '8h' }
         );
 
+        const fullUser = await getFullUserData(user.id);
         res.json({
             success: true,
             token,
-            user: {
-                id: user.id,
-                username: user.username,
-                displayName: user.displayName,
-                isAdmin: user.isAdmin
-            }
+            user: fullUser
         });
 
     } catch (err) {
@@ -98,18 +102,13 @@ router.get('/me', async (req, res) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        const user = await User.findByPk(decoded.id, {
-            attributes: ['id', 'username', 'displayName', 'isAdmin', 'email', 'position', 'location', 'profileImage', 'showEmail', 'bookingPageActive'],
-            include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
-        });
+        const fullUser = await getFullUserData(decoded.id);
 
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!fullUser) return res.status(404).json({ error: 'User not found' });
         
-        // Pass the isSso flag from decoded token down to the client
-        const userJson = user.toJSON();
-        userJson.isSso = !!decoded.isSso;
+        fullUser.isSso = !!decoded.isSso;
 
-        res.json(userJson);
+        res.json(fullUser);
     } catch (err) {
         res.status(401).json({ error: 'Invalid token' });
     }
@@ -246,17 +245,13 @@ router.post('/sso', async (req, res) => {
             { expiresIn: '8h' }
         );
 
+        const fullUser = await getFullUserData(user.id);
+        if (fullUser) fullUser.isSso = true;
+
         res.json({
             success: true,
             token: appToken,
-            user: {
-                id: user.id,
-                username: user.username,
-                displayName: user.displayName,
-                email: user.email,
-                isAdmin: user.isAdmin,
-                isSso: true
-            }
+            user: fullUser
         });
 
     } catch (err) {
@@ -349,12 +344,8 @@ router.put('/profile', async (req, res) => {
         }
 
         // Reload user with new associations
-        const reloadedUser = await User.findByPk(user.id, {
-            attributes: ['id', 'username', 'displayName', 'isAdmin', 'email', 'position', 'location', 'profileImage', 'showEmail', 'bookingPageActive'],
-            include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
-        });
-
-        res.json({ success: true, user: reloadedUser });
+        const fullUser = await getFullUserData(user.id);
+        res.json({ success: true, user: fullUser });
     } catch (err) {
         console.error('Profile Update Error:', err);
         res.status(500).json({ error: 'Server Fehler beim Aktualisieren des Profils: ' + err.message });
