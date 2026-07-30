@@ -100,7 +100,7 @@ router.get('/me', async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         const { Department } = require('../models');
         const user = await User.findByPk(decoded.id, {
-            attributes: ['id', 'username', 'displayName', 'isAdmin', 'email', 'position', 'location', 'profileImage', 'showEmail'],
+            attributes: ['id', 'username', 'displayName', 'isAdmin', 'email', 'position', 'location', 'profileImage', 'showEmail', 'bookingPageActive'],
             include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
         });
 
@@ -276,15 +276,15 @@ router.put('/profile', async (req, res) => {
         const user = await User.findByPk(decoded.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        const { displayName, email, position, location, profileImage, showEmail, departmentId } = req.body;
+        const { displayName, position, location, profileImage, showEmail, departmentId, bookingPageActive } = req.body;
 
         // Update basic info
         user.displayName = displayName || user.displayName;
-        user.email = email || user.email;
         user.position = position !== undefined ? position : user.position;
         user.location = location !== undefined ? location : user.location;
         if (profileImage !== undefined) user.profileImage = profileImage;
         if (showEmail !== undefined) user.showEmail = showEmail;
+        if (bookingPageActive !== undefined) user.bookingPageActive = bookingPageActive;
 
         await user.save();
 
@@ -351,7 +351,7 @@ router.put('/profile', async (req, res) => {
 
         // Reload user with new associations
         const reloadedUser = await User.findByPk(user.id, {
-            attributes: ['id', 'username', 'displayName', 'isAdmin', 'email', 'position', 'location', 'profileImage', 'showEmail'],
+            attributes: ['id', 'username', 'displayName', 'isAdmin', 'email', 'position', 'location', 'profileImage', 'showEmail', 'bookingPageActive'],
             include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
         });
 

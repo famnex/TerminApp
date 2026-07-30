@@ -21,7 +21,8 @@ const Profile = () => {
         location: '',
         showEmail: true,
         profileImage: '',
-        departmentId: ''
+        departmentId: '',
+        bookingPageActive: false
     });
 
     const [departments, setDepartments] = useState([]);
@@ -48,7 +49,8 @@ const Profile = () => {
                         location: user.location || '',
                         showEmail: user.showEmail !== false,
                         profileImage: user.profileImage || '',
-                        departmentId: currentDeptId
+                        departmentId: currentDeptId,
+                        bookingPageActive: user.bookingPageActive === true
                     });
                 }
             } catch (err) {
@@ -67,8 +69,8 @@ const Profile = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSwitchChange = (checked) => {
-        setFormData(prev => ({ ...prev, showEmail: checked }));
+    const handleSwitchChange = (name, checked) => {
+        setFormData(prev => ({ ...prev, [name]: checked }));
     };
 
     const handleImageUpload = async (e) => {
@@ -179,14 +181,14 @@ const Profile = () => {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="email">E-Mail-Adresse</Label>
+                                <Label htmlFor="email">E-Mail-Adresse (Nicht änderbar)</Label>
                                 <Input
                                     id="email"
                                     name="email"
                                     type="email"
-                                    required
+                                    disabled
                                     value={formData.email}
-                                    onChange={handleInputChange}
+                                    className="bg-muted"
                                     placeholder="max@beispiel.de"
                                 />
                             </div>
@@ -242,7 +244,19 @@ const Profile = () => {
                             </div>
                             <Switch
                                 checked={formData.showEmail}
-                                onCheckedChange={handleSwitchChange}
+                                onCheckedChange={checked => handleSwitchChange('showEmail', checked)}
+                            />
+                        </div>
+
+                        {/* Booking Page Active toggle */}
+                        <div className="flex items-center justify-between p-4 rounded-lg border border-primary/20 bg-primary/5 animate-pulse-subtle">
+                            <div className="space-y-0.5">
+                                <Label className="text-base font-semibold">Buchungsseite aktivieren</Label>
+                                <p className="text-sm text-muted-foreground">Aktiviere diese Option, damit andere Personen Termine bei dir buchen können. Standard für neue Benutzer ist deaktiviert.</p>
+                            </div>
+                            <Switch
+                                checked={formData.bookingPageActive}
+                                onCheckedChange={checked => handleSwitchChange('bookingPageActive', checked)}
                             />
                         </div>
                     </CardContent>

@@ -61,8 +61,16 @@ if (fs.existsSync(publicDir)) {
 }
 
 // Sync Database and Start Server
-sequelize.sync().then(() => {
+sequelize.sync().then(async () => {
     console.log('Database synced');
+
+    // Run schema upgrade queries if needed
+    try {
+        await sequelize.query("ALTER TABLE Users ADD COLUMN bookingPageActive BOOLEAN DEFAULT 0");
+        console.log('Database upgrade: Added bookingPageActive column to Users table');
+    } catch (dbErr) {
+        // Safe to ignore if column already exists
+    }
 
     // Start Jobs
     const startReminderJob = require('./jobs/reminders');

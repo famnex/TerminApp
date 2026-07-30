@@ -29,6 +29,7 @@ const BookingWizard = () => {
         phone: ''
     });
     const [bookingResult, setBookingResult] = useState(null);
+    const [errorMsg, setErrorMsg] = useState(null);
 
     // Calendar State
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -37,7 +38,14 @@ const BookingWizard = () => {
     useEffect(() => {
         api.get(`/public/users/${userId}/topics`)
             .then(res => setTopics(res.data))
-            .catch(err => console.error(err));
+            .catch(err => {
+                console.error(err);
+                if (err.response?.status === 403) {
+                    setErrorMsg(err.response.data.error || 'Diese Buchungsseite ist derzeit deaktiviert.');
+                } else {
+                    setErrorMsg('Fehler beim Laden der Buchungsseite.');
+                }
+            });
     }, [userId]);
 
     // Step 2: Fetch Slots when Topic & Month changes
@@ -192,6 +200,21 @@ const BookingWizard = () => {
             </Card>
         );
     };
+
+    if (errorMsg) {
+        return (
+            <div className="min-h-screen bg-slate-50/50 py-12 px-4 font-sans text-slate-900 flex items-center justify-center">
+                <Card className="max-w-md w-full">
+                    <CardHeader className="text-center">
+                        <CardTitle className="text-destructive text-xl">Deaktiviert</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-center text-muted-foreground pb-6">
+                        {errorMsg}
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-50/50 py-12 px-4 font-sans text-slate-900">

@@ -23,6 +23,7 @@ router.get('/users', async (req, res) => {
     try {
         const { Op } = require('sequelize');
         const users = await User.findAll({
+            where: { bookingPageActive: true },
             attributes: ['id', 'displayName', 'email', 'position', 'profileImage', 'showEmail'],
             include: [
                 {
@@ -88,6 +89,11 @@ router.get('/settings', async (req, res) => {
 // GET /api/public/users/:id/topics
 router.get('/users/:id/topics', async (req, res) => {
     try {
+        const user = await User.findByPk(req.params.id);
+        if (!user || !user.bookingPageActive) {
+            return res.status(403).json({ error: 'Diese Buchungsseite ist derzeit deaktiviert.' });
+        }
+
         const topics = await Topic.findAll({
             where: { userId: req.params.id }
         });
@@ -103,6 +109,11 @@ router.get('/slots', async (req, res) => {
         const { userId, topicId, start, end } = req.query;
         if (!userId || !topicId || !start || !end) {
             return res.status(400).json({ error: 'Missing parameters' });
+        }
+
+        const user = await User.findByPk(userId);
+        if (!user || !user.bookingPageActive) {
+            return res.status(403).json({ error: 'Diese Buchungsseite ist derzeit deaktiviert.' });
         }
 
         const slots = await getAvailableSlots(
@@ -124,6 +135,11 @@ router.post('/book', async (req, res) => {
 
         const topic = await Topic.findByPk(topicId);
         if (!topic) return res.status(404).json({ error: 'Topic not found' });
+
+        const user = await User.findByPk(topic.userId);
+        if (!user || !user.bookingPageActive) {
+            return res.status(403).json({ error: 'Diese Buchungsseite ist derzeit deaktiviert.' });
+        }
 
         const startTime = parseISO(slotTimestamp);
         const endTime = addMinutes(startTime, topic.durationMinutes);
