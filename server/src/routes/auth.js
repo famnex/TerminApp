@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const { authenticateLDAP } = require('../utils/ldap');
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, Department } = require('../models');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_change_me';
 
@@ -98,7 +98,6 @@ router.get('/me', async (req, res) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        const { Department } = require('../models');
         const user = await User.findByPk(decoded.id, {
             attributes: ['id', 'username', 'displayName', 'isAdmin', 'email', 'position', 'location', 'profileImage', 'showEmail', 'bookingPageActive'],
             include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]

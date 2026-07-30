@@ -53,7 +53,8 @@ const AdminUserList = () => {
         position: '',
         location: '',
         showEmail: true,
-        profileImage: ''
+        profileImage: '',
+        bookingPageActive: false
     });
 
     const navigate = useNavigate();
@@ -119,7 +120,8 @@ const AdminUserList = () => {
             position: '',
             location: '',
             showEmail: true,
-            profileImage: ''
+            profileImage: '',
+            bookingPageActive: false
         });
         setDeptFormData({ name: '', description: '', userIds: [] });
         setError(null);
@@ -243,7 +245,8 @@ const AdminUserList = () => {
             position: userToEdit.position || '',
             location: userToEdit.location || '',
             showEmail: userToEdit.showEmail !== false, // Default to true if undefined
-            profileImage: userToEdit.profileImage || ''
+            profileImage: userToEdit.profileImage || '',
+            bookingPageActive: userToEdit.bookingPageActive === true
         });
     };
 
@@ -299,6 +302,7 @@ const AdminUserList = () => {
                                         <TableHead>Email</TableHead>
                                         <TableHead>Rolle</TableHead>
                                         <TableHead>Auth Methode</TableHead>
+                                        <TableHead>Buchungsseite</TableHead>
                                         <TableHead className="text-right">Aktionen</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -337,6 +341,19 @@ const AdminUserList = () => {
                                             </TableCell>
                                             <TableCell>
                                                 <span className="font-mono text-xs text-muted-foreground uppercase">{u.authMethod}</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                {u.bookingPageActive ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                                        Aktiv
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                                        Inaktiv
+                                                    </span>
+                                                )}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
@@ -517,6 +534,10 @@ const AdminUserList = () => {
                                     <input type="checkbox" id="isAdmin" name="isAdmin" checked={formData.isAdmin} onChange={handleInputChange} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 h-4 w-4" />
                                     <label htmlFor="isAdmin" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Administrator-Rechte gewähren</label>
                                 </div>
+                                <div className="flex items-center space-x-2 pt-2">
+                                    <input type="checkbox" id="bookingPageActive" name="bookingPageActive" checked={formData.bookingPageActive} onChange={handleInputChange} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 h-4 w-4" />
+                                    <label htmlFor="bookingPageActive" className="text-sm font-medium leading-none">Buchungsseite aktivieren</label>
+                                </div>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-2">
                                 <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>Abbrechen</Button>
@@ -626,6 +647,10 @@ const AdminUserList = () => {
                                 <div className="flex items-center space-x-2 pt-2 border-t">
                                     <input type="checkbox" id="editIsAdmin" name="isAdmin" checked={formData.isAdmin} onChange={handleInputChange} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 h-4 w-4" />
                                     <label htmlFor="editIsAdmin" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Administrator-Rechte gewähren</label>
+                                </div>
+                                <div className="flex items-center space-x-2 pt-2">
+                                    <input type="checkbox" id="editBookingPageActive" name="bookingPageActive" checked={formData.bookingPageActive} onChange={handleInputChange} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 h-4 w-4" />
+                                    <label htmlFor="editBookingPageActive" className="text-sm font-medium leading-none">Buchungsseite aktivieren</label>
                                 </div>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-2">

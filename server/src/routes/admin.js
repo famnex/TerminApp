@@ -7,11 +7,12 @@ const { requireAdmin } = require('../middleware/auth');
 // Note: authenticateToken is already applied in index.js for /api/admin
 router.use(requireAdmin);
 
-// GET Users
+// GET All Users (For user management)
 router.get('/users', async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'username', 'displayName', 'email', 'isAdmin', 'authMethod', 'position', 'profileImage', 'showEmail', 'location']
+            attributes: ['id', 'username', 'displayName', 'email', 'isAdmin', 'authMethod', 'position', 'location', 'profileImage', 'showEmail', 'bookingPageActive'],
+            include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
         });
         res.json(users);
     } catch (err) {
@@ -22,7 +23,7 @@ router.get('/users', async (req, res) => {
 // POST Create User
 router.post('/users', async (req, res) => {
     try {
-        const { username, password, displayName, email, isAdmin, authMethod } = req.body;
+        const { username, password, displayName, email, isAdmin, authMethod, bookingPageActive } = req.body;
 
         // Validation could go here
 
@@ -32,7 +33,8 @@ router.post('/users', async (req, res) => {
             displayName,
             email,
             isAdmin: isAdmin || false,
-            authMethod: authMethod || 'local'
+            authMethod: authMethod || 'local',
+            bookingPageActive: bookingPageActive !== undefined ? bookingPageActive : false
         });
 
         res.status(201).json({
@@ -52,7 +54,7 @@ router.post('/users', async (req, res) => {
 router.put('/users/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { displayName, email, isAdmin, password } = req.body;
+        const { displayName, email, isAdmin, password, bookingPageActive } = req.body;
 
         const user = await User.findByPk(id);
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -61,6 +63,7 @@ router.put('/users/:id', async (req, res) => {
         user.displayName = displayName || user.displayName;
         user.email = email || user.email;
         if (isAdmin !== undefined) user.isAdmin = isAdmin;
+        if (bookingPageActive !== undefined) user.bookingPageActive = bookingPageActive;
 
         // New Profile Fields
         user.position = req.body.position; // Allow empty string to clear
