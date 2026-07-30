@@ -1,25 +1,12 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Settings, Clock, Users, LogOut, Tags, Layers, RefreshCw, BookOpen, User } from 'lucide-react';
-import { Button } from "../components/ui/button";
+import { LayoutDashboard, Calendar, Settings, Clock, Users, Tags, Layers, RefreshCw, BookOpen, User } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 
 const Dashboard = () => {
-    const { user, logout, publicSettings } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
-
-    const handleLogout = () => {
-        const isSsoUser = user?.isSso;
-        logout();
-        if (!isSsoUser || !publicSettings?.sso_logout_redirect) {
-            navigate('/');
-        }
-    };
-
-    const logoutLabel = (user?.isSso && publicSettings?.sso_logout_label)
-        ? publicSettings.sso_logout_label
-        : 'Abmelden';
 
     return (
         <div className="animate-fade-in-up max-w-5xl mx-auto space-y-8 pb-20">
@@ -28,9 +15,6 @@ const Dashboard = () => {
                     <p className="text-muted-foreground uppercase tracking-wider text-xs font-semibold mb-1">Dashboard</p>
                     <h1 className="text-3xl font-bold tracking-tight">Willkommen zurück, <span className="text-primary">{user?.displayName}</span></h1>
                 </div>
-                <Button variant="ghost" onClick={handleLogout} className="text-muted-foreground hover:text-destructive gap-2">
-                    <LogOut size={20} /> {logoutLabel}
-                </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

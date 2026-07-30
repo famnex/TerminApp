@@ -24,13 +24,34 @@ import './index.css';
 
 import { Menu, X } from 'lucide-react';
 
-// Admin Link Component that adapts to auth state
-const AdminLink = ({ onClick }) => {
-  const { user } = useAuth();
-  return user ? (
-    <Link to="/dashboard" onClick={onClick} className="text-muted-foreground hover:text-primary transition-colors font-medium text-sm">Dashboard ({user.displayName})</Link>
-  ) : (
-    <Link to="/admin" onClick={onClick} className="text-muted-foreground hover:text-primary transition-colors font-medium text-sm">Login</Link>
+// Navigation Items Component that adapts to auth state
+const NavItems = ({ onClick, className = "flex items-center gap-6" }) => {
+  const { user, logout, publicSettings } = useAuth();
+  const logoutLabel = publicSettings?.sso_logout_label || 'Abmelden';
+  
+  return (
+    <div className={className}>
+      <Link to="/recover" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors" onClick={onClick}>
+        Termin absagen
+      </Link>
+      {user ? (
+        <>
+          <Link to="/dashboard" onClick={onClick} className="text-muted-foreground hover:text-primary transition-colors font-medium text-sm">
+            Dashboard ({user.displayName})
+          </Link>
+          <button 
+            onClick={() => { logout(); if (onClick) onClick(); }} 
+            className="text-muted-foreground hover:text-destructive transition-colors font-medium text-sm flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0"
+          >
+            {logoutLabel}
+          </button>
+        </>
+      ) : (
+        <Link to="/admin" onClick={onClick} className="text-muted-foreground hover:text-primary transition-colors font-medium text-sm">
+          Login
+        </Link>
+      )}
+    </div>
   );
 };
 
@@ -135,9 +156,8 @@ function App() {
               </Link>
 
               {/* Desktop Nav */}
-              <nav className="hidden md:flex items-center gap-6">
-                <Link to="/recover" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Termin absagen</Link>
-                <AdminLink />
+              <nav className="hidden md:flex">
+                <NavItems />
               </nav>
 
               {/* Mobile Menu Toggle */}
@@ -152,15 +172,8 @@ function App() {
             {/* Mobile Nav Container */}
             {isMobileMenuOpen && (
               <div className="md:hidden border-t bg-background">
-                <nav className="container flex flex-col gap-4 py-4">
-                  <Link
-                    to="/recover"
-                    className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Termin absagen
-                  </Link>
-                  <AdminLink onClick={() => setIsMobileMenuOpen(false)} />
+                <nav className="container py-4">
+                  <NavItems onClick={() => setIsMobileMenuOpen(false)} className="flex flex-col gap-4" />
                 </nav>
               </div>
             )}
