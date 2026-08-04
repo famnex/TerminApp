@@ -40,6 +40,7 @@ Diese Datei dokumentiert die Struktur der Datenbank für die TerminApp.
 - `description`: TEXT
 - `userId`: INTEGER (Foreign Key -> Users.id)
 - `batchConfigId`: INTEGER (Foreign Key -> BatchConfigs.id, On Delete: CASCADE)
+- `order`: INTEGER (Default: 0)
 - `createdAt`: DATETIME
 - `updatedAt`: DATETIME
 

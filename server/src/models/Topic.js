@@ -22,6 +22,10 @@ const Topic = sequelize.define('Topic', {
             key: 'id'
         },
         onDelete: 'CASCADE'
+    },
+    order: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
     }
 });
 

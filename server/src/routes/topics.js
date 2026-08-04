@@ -7,9 +7,34 @@ router.get('/mine', async (req, res) => {
     try {
         const userId = req.user.id;
         const topics = await Topic.findAll({
-            where: { userId }
+            where: { userId },
+            order: [['order', 'ASC'], ['id', 'ASC']]
         });
         res.json(topics);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PUT /api/topics/reorder
+router.put('/reorder', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { topicIds } = req.body;
+
+        if (!Array.isArray(topicIds)) {
+            return res.status(400).json({ error: 'topicIds array is required' });
+        }
+
+        const updatePromises = topicIds.map((id, index) => {
+            return Topic.update(
+                { order: index },
+                { where: { id, userId } }
+            );
+        });
+
+        await Promise.all(updatePromises);
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

@@ -95,7 +95,8 @@ router.get('/users/:id/topics', async (req, res) => {
         }
 
         const topics = await Topic.findAll({
-            where: { userId: req.params.id }
+            where: { userId: req.params.id },
+            order: [['order', 'ASC'], ['id', 'ASC']]
         });
         res.json(topics);
     } catch (err) {

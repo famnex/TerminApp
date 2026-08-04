@@ -37,7 +37,21 @@ const BookingWizard = () => {
     // Step 1: Fetch Topics
     useEffect(() => {
         api.get(`/public/users/${userId}/topics`)
-            .then(res => setTopics(res.data))
+            .then(res => {
+                const fetchedTopics = res.data;
+                setTopics(fetchedTopics);
+
+                // Auto-select topic if passed via URL parameter ?topic=ID or ?topicId=ID
+                const urlParams = new URLSearchParams(window.location.search);
+                const preselectedTopicId = urlParams.get('topic') || urlParams.get('topicId');
+                if (preselectedTopicId) {
+                    const foundTopic = fetchedTopics.find(t => t.id.toString() === preselectedTopicId.toString());
+                    if (foundTopic) {
+                        setSelectedTopic(foundTopic);
+                        setStep(2);
+                    }
+                }
+            })
             .catch(err => {
                 console.error(err);
                 if (err.response?.status === 403) {
@@ -67,6 +81,9 @@ const BookingWizard = () => {
     const handleTopicSelect = (topic) => {
         setSelectedTopic(topic);
         setStep(2);
+        const url = new URL(window.location.href);
+        url.searchParams.set('topic', topic.id);
+        window.history.replaceState({}, '', url.pathname + url.search);
     };
 
     const handleDateSelect = (date) => {
@@ -105,7 +122,11 @@ const BookingWizard = () => {
     };
 
     const handleShare = () => {
-        navigator.clipboard.writeText(window.location.href);
+        const url = new URL(window.location.href);
+        if (selectedTopic) {
+            url.searchParams.set('topic', selectedTopic.id);
+        }
+        navigator.clipboard.writeText(url.toString());
         toast.success("Link in die Zwischenablage kopiert!");
     };
 
@@ -251,7 +272,7 @@ const BookingWizard = () => {
                                         </div>
                                     </CardHeader>
                                     <CardContent>
-                                        <p className="text-sm text-muted-foreground">{topic.description || "Keine zusätzliche Beschreibung verfügbar."}</p>
+                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{topic.description || "Keine zusätzliche Beschreibung verfügbar."}</p>
                                     </CardContent>
                                 </Card>
                             ))}

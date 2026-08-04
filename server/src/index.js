@@ -72,6 +72,13 @@ sequelize.sync().then(async () => {
         // Safe to ignore if column already exists
     }
 
+    try {
+        await sequelize.query("ALTER TABLE Topics ADD COLUMN \"order\" INTEGER DEFAULT 0");
+        console.log('Database upgrade: Added order column to Topics table');
+    } catch (dbErr) {
+        // Safe to ignore if column already exists
+    }
+
     // Start Jobs
     const startReminderJob = require('./jobs/reminders');
     startReminderJob();
