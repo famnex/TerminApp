@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import api from '../api';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, isBefore, startOfDay, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 
 const BookingWizard = () => {
     const { userId } = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [topics, setTopics] = useState([]);
@@ -41,9 +42,8 @@ const BookingWizard = () => {
                 const fetchedTopics = res.data;
                 setTopics(fetchedTopics);
 
-                // Auto-select topic if passed via URL parameter ?topic=ID or ?topicId=ID
-                const urlParams = new URLSearchParams(window.location.search);
-                const preselectedTopicId = urlParams.get('topic') || urlParams.get('topicId');
+                // Auto-select topic if passed via HashRouter URL parameter ?topic=ID or ?topicId=ID
+                const preselectedTopicId = searchParams.get('topic') || searchParams.get('topicId');
                 if (preselectedTopicId) {
                     const foundTopic = fetchedTopics.find(t => t.id.toString() === preselectedTopicId.toString());
                     if (foundTopic) {
@@ -81,9 +81,13 @@ const BookingWizard = () => {
     const handleTopicSelect = (topic) => {
         setSelectedTopic(topic);
         setStep(2);
-        const url = new URL(window.location.href);
-        url.searchParams.set('topic', topic.id);
-        window.history.replaceState({}, '', url.pathname + url.search);
+        setSearchParams({ topic: topic.id });
+    };
+
+    const handleBackToTopics = () => {
+        setStep(1);
+        setSelectedTopic(null);
+        setSearchParams({});
     };
 
     const handleDateSelect = (date) => {
@@ -122,11 +126,16 @@ const BookingWizard = () => {
     };
 
     const handleShare = () => {
-        const url = new URL(window.location.href);
+        let shareUrl;
+        const hashParts = window.location.hash.split('?');
+        const baseHash = hashParts[0]; // e.g. #/book/2
+
         if (selectedTopic) {
-            url.searchParams.set('topic', selectedTopic.id);
+            shareUrl = `${window.location.origin}${window.location.pathname}${baseHash}?topic=${selectedTopic.id}`;
+        } else {
+            shareUrl = `${window.location.origin}${window.location.pathname}${baseHash}`;
         }
-        navigator.clipboard.writeText(url.toString());
+        navigator.clipboard.writeText(shareUrl);
         toast.success("Link in die Zwischenablage kopiert!");
     };
 
@@ -288,7 +297,7 @@ const BookingWizard = () => {
                     {step === 2 && (
                         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                             <div className="flex items-center space-x-2">
-                                <Button variant="ghost" size="icon" onClick={() => setStep(1)}>
+                                <Button variant="ghost" size="icon" onClick={handleBackToTopics}>
                                     <ArrowLeft className="w-4 h-4" />
                                 </Button>
                                 <h2 className="text-lg font-semibold">Datum wählen</h2>
