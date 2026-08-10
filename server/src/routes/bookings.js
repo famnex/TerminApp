@@ -28,6 +28,7 @@ router.get('/mine', async (req, res) => {
         console.error(err);
         res.status(500).json({ error: err.message });
     }
+});
 // PUT /api/bookings/:id (Update contact details)
 router.put('/:id', async (req, res) => {
     try {
