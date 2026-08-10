@@ -28,6 +28,31 @@ router.get('/mine', async (req, res) => {
         console.error(err);
         res.status(500).json({ error: err.message });
     }
+// PUT /api/bookings/:id (Update contact details)
+router.put('/:id', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { id } = req.params;
+        const { customerName, customerEmail, customerPhone } = req.body;
+
+        const booking = await Booking.findByPk(id, { include: [Topic] });
+        if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+        const isProvider = (booking.providerId === userId) || (booking.Topic && booking.Topic.userId === userId);
+        if (!isProvider && !req.user.isAdmin) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        if (customerName !== undefined) booking.customerName = customerName;
+        if (customerEmail !== undefined) booking.customerEmail = customerEmail;
+        if (customerPhone !== undefined) booking.customerPhone = customerPhone;
+
+        await booking.save();
+
+        res.json({ success: true, booking });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // POST /api/bookings/:id/cancel

@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Calendar, Clock, User, Phone, Mail, Trash2, XCircle, ChevronLeft, Archive, RotateCcw } from 'lucide-react';
+import { Calendar, Clock, User, Phone, Mail, Trash2, XCircle, ChevronLeft, Archive, RotateCcw, Edit2, Check, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { toast } from 'sonner';
 
 const Appointments = () => {
     const navigate = useNavigate();
@@ -12,6 +13,10 @@ const Appointments = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('current'); // 'current' or 'archived'
+
+    // Contact Inline Edit State
+    const [editingBookingId, setEditingBookingId] = useState(null);
+    const [editFormData, setEditFormData] = useState({ customerName: '', customerEmail: '', customerPhone: '' });
 
     const fetchBookings = async (isArchived = false) => {
         setLoading(true);
@@ -29,6 +34,34 @@ const Appointments = () => {
     useEffect(() => {
         fetchBookings(activeTab === 'archived');
     }, [activeTab]);
+
+    const startEditingContact = (booking, e) => {
+        if (e) e.stopPropagation();
+        setEditingBookingId(booking.id);
+        setEditFormData({
+            customerName: booking.customerName || '',
+            customerEmail: booking.customerEmail || '',
+            customerPhone: booking.customerPhone || ''
+        });
+    };
+
+    const handleSaveContact = async (bookingId, e) => {
+        if (e) e.stopPropagation();
+        try {
+            await api.put(`/bookings/${bookingId}`, editFormData);
+            toast.success('Kontaktdaten erfolgreich aktualisiert');
+            setEditingBookingId(null);
+            fetchBookings(activeTab === 'archived');
+        } catch (err) {
+            console.error(err);
+            toast.error('Fehler beim Speichern: ' + (err.response?.data?.error || err.message));
+        }
+    };
+
+    const handleCancelContactEdit = (e) => {
+        if (e) e.stopPropagation();
+        setEditingBookingId(null);
+    };
 
     const handleCancel = async (id) => {
         if (!window.confirm('Möchten Sie diesen Termin wirklich stornieren? Der Kunde wird benachrichtigt.')) return;
@@ -129,22 +162,83 @@ const Appointments = () => {
                                     </div>
                                     <p className="text-sm font-medium text-primary ml-8 mb-6">{booking.Topic?.title || 'Allgemeiner Termin'}</p>
 
-                                    <div className="space-y-3 bg-gray-50 p-4 rounded-lg text-sm">
-                                        <div className="flex items-center gap-3 text-gray-700">
-                                            <User size={16} className="text-gray-400" />
-                                            <span className="font-medium">{booking.customerName}</span>
+                                    {editingBookingId === booking.id ? (
+                                        <div className="space-y-3 bg-blue-50/70 border border-blue-200 p-4 rounded-lg text-sm" onClick={(e) => e.stopPropagation()}>
+                                            <div className="text-xs font-semibold text-blue-700 mb-1">
+                                                Kontaktdaten bearbeiten
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <User size={16} className="text-blue-500 shrink-0" />
+                                                <input
+                                                    type="text"
+                                                    className="flex-1 px-2.5 py-1.5 bg-white border border-blue-300 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    value={editFormData.customerName}
+                                                    onChange={(e) => setEditFormData({ ...editFormData, customerName: e.target.value })}
+                                                    placeholder="Name des Kunden"
+                                                />
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Mail size={16} className="text-blue-500 shrink-0" />
+                                                <input
+                                                    type="email"
+                                                    className="flex-1 px-2.5 py-1.5 bg-white border border-blue-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    value={editFormData.customerEmail}
+                                                    onChange={(e) => setEditFormData({ ...editFormData, customerEmail: e.target.value })}
+                                                    placeholder="E-Mail-Adresse"
+                                                />
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Phone size={16} className="text-blue-500 shrink-0" />
+                                                <input
+                                                    type="tel"
+                                                    className="flex-1 px-2.5 py-1.5 bg-white border border-blue-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    value={editFormData.customerPhone}
+                                                    onChange={(e) => setEditFormData({ ...editFormData, customerPhone: e.target.value })}
+                                                    placeholder="Telefonnummer (optional)"
+                                                />
+                                            </div>
+                                            <div className="flex justify-end gap-2 pt-2 border-t border-blue-200">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCancelContactEdit}
+                                                    className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                                                >
+                                                    <X size={14} /> Abbrechen
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => handleSaveContact(booking.id, e)}
+                                                    className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 shadow-sm transition-colors"
+                                                >
+                                                    <Check size={14} /> Speichern
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-3 text-gray-600">
-                                            <Mail size={16} className="text-gray-400" />
-                                            <span className="truncate">{booking.customerEmail}</span>
-                                        </div>
-                                        {booking.customerPhone && (
+                                    ) : (
+                                        <div
+                                            onClick={(e) => startEditingContact(booking, e)}
+                                            className="space-y-3 bg-gray-50 hover:bg-blue-50/40 border border-transparent hover:border-blue-200 p-4 rounded-lg text-sm cursor-pointer transition-all relative group/contact"
+                                            title="Klicken zum Bearbeiten der Kontaktdaten"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3 text-gray-700">
+                                                    <User size={16} className="text-gray-400" />
+                                                    <span className="font-medium">{booking.customerName}</span>
+                                                </div>
+                                                <span className="text-xs text-blue-600 flex items-center gap-1 opacity-0 group-hover/contact:opacity-100 transition-opacity">
+                                                    <Edit2 size={13} /> Bearbeiten
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-3 text-gray-600">
+                                                <Mail size={16} className="text-gray-400" />
+                                                <span className="truncate">{booking.customerEmail}</span>
+                                            </div>
                                             <div className="flex items-center gap-3 text-gray-600">
                                                 <Phone size={16} className="text-gray-400" />
-                                                <span>{booking.customerPhone}</span>
+                                                <span>{booking.customerPhone || <span className="text-gray-400 italic opacity-70">Keine Telefonnummer hinterlegt</span>}</span>
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="bg-gray-50 p-4 border-t border-gray-100 flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
