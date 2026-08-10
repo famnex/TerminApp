@@ -127,7 +127,7 @@ const Appointments = () => {
                                         <Clock size={24} className="text-gray-400" />
                                         {format(start, 'HH:mm', { locale: de })} - {format(end, 'HH:mm', { locale: de })}
                                     </div>
-                                    <p className="text-sm text-gray-500 ml-8 mb-6">{booking.Topic?.name || 'Allgemeiner Termin'}</p>
+                                    <p className="text-sm font-medium text-primary ml-8 mb-6">{booking.Topic?.title || 'Allgemeiner Termin'}</p>
 
                                     <div className="space-y-3 bg-gray-50 p-4 rounded-lg text-sm">
                                         <div className="flex items-center gap-3 text-gray-700">
