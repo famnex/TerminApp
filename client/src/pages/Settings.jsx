@@ -25,6 +25,7 @@ const Settings = () => {
     const [showSmtpDialog, setShowSmtpDialog] = useState(false);
     const [testCreds, setTestCreds] = useState({ username: '', password: '' });
     const [testEmailRecipient, setTestEmailRecipient] = useState('');
+    const [testMailType, setTestMailType] = useState('standard');
 
     // Split result state to avoid crashes
     const [ldapResult, setLdapResult] = useState(null);
@@ -43,14 +44,19 @@ const Settings = () => {
         }
 
         fetchSettings();
-    }, [user, navigate]);
+    }, []);
 
     const fetchSettings = async () => {
+        setLoading(true);
         try {
             const res = await api.get('/admin/settings');
             const settingsMap = {};
             res.data.forEach(s => settingsMap[s.key] = s.value);
             setSettings(settingsMap);
+            setOriginalSettings(settingsMap);
+            if (user?.email) {
+                setTestEmailRecipient(user.email);
+            }
         } catch (err) {
             console.error(err);
             toast.error("Fehler beim Laden der Einstellungen.");
@@ -128,7 +134,8 @@ const Settings = () => {
         try {
             const res = await api.post('/admin/smtp-test', {
                 config: settings,
-                recipient: testEmailRecipient
+                recipient: testEmailRecipient,
+                mailType: testMailType
             });
             setSmtpResult({ success: true, message: res.data.message });
             toast.success("E-Mail erfolgreich gesendet!");
@@ -459,6 +466,24 @@ const Settings = () => {
                                 placeholder="ihre@email.de"
                                 required
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="testMailType">E-Mail-Typ / Benachrichtigung testen</Label>
+                            <select
+                                id="testMailType"
+                                className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                                value={testMailType}
+                                onChange={e => setTestMailType(e.target.value)}
+                            >
+                                <option value="standard">Standard Test-E-Mail (SMTP-Prüfung)</option>
+                                <option value="confirmation">Terminbestätigung</option>
+                                <option value="cancellation_noshow">Terminstornierung (Kunde nicht erschienen)</option>
+                                <option value="cancellation_sick">Terminstornierung (Anbieter krank)</option>
+                                <option value="cancellation_other">Terminstornierung (Sonstiges / Freitext)</option>
+                                <option value="reminder">Terminerinnerung</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground">Wählen Sie einen Vorlagentyp aus, um das Aussehen der E-Mail im Posteingang zu testen.</p>
                         </div>
 
                         {smtpResult && (

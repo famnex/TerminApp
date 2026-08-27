@@ -229,14 +229,12 @@ router.post('/upload-user-image', upload.single('image'), async (req, res) => {
 const nodemailer = require('nodemailer');
 router.post('/smtp-test', async (req, res) => {
     try {
-        const { config, recipient } = req.body;
+        const { config, recipient, mailType } = req.body;
 
         // Convert port to number if string
         const smtpPort = parseInt(config.smtp_port) || 587;
 
         // Auto-fix: Port 587 is usually STARTTLS (secure: false), Port 465 is SSL (secure: true)
-        // If user enabled SSL but uses port 587, force secure: false to avoid "wrong version number" error.
-        // Nodemailer will still upgrade to TLS via STARTTLS if available.
         let isSecure = config.smtp_secure === 'true' || config.smtp_secure === true;
 
         if (smtpPort === 587 && isSecure) {
@@ -257,12 +255,133 @@ router.post('/smtp-test', async (req, res) => {
             }
         });
 
+        const fromAddress = `"${config.smtp_from_name || 'System'}" <${config.smtp_from_email || config.smtp_user}>`;
+        const rawAppUrl = config.app_url || 'https://cloud.mso-hef.de/termin';
+        const appUrl = rawAppUrl.replace(/\/$/, '');
+        const sampleRebookUrl = `${appUrl}/#/book/1?topic=1`;
+
+        let subject = "Test E-Mail ✔";
+        let text = "Das ist eine Test-Nachricht vom Terminsystem.";
+        let html = "<b>Das ist eine Test-Nachricht vom Terminsystem.</b><br>Die SMTP-Verbindung funktioniert erfolgreich.";
+
+        const type = mailType || 'standard';
+
+        if (type === 'confirmation') {
+            subject = "✓ Test-Terminbestätigung: Strategiegespräch (Test)";
+            text = `Test-Terminbestätigung\n\nIhr Test-Termin "Strategiegespräch" wurde erfolgreich vereinbart.\n\nAnbieter: Max Mustermann\nZeit: Montag, 15. September 2026, 10:00 Uhr\nOrt: Raum 101`;
+            html = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <div style="background-color: #22c55e; color: white; padding: 20px; text-align: center;">
+                        <h2 style="margin:0;">✓ Test-Terminbestätigung</h2>
+                    </div>
+                    <div style="padding: 20px; background-color: #ffffff;">
+                        <p>Hallo <strong>Max Mustermann (Test)</strong>,</p>
+                        <p>Dies ist eine Test-Terminbestätigung vom Terminsystem.</p>
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin: 15px 0;">
+                            <div><strong>Thema:</strong> Strategiegespräch (Test)</div>
+                            <div><strong>Experte:</strong> Max Mustermann</div>
+                            <div><strong>Zeit:</strong> Montag, 15. September 2026, 10:00 Uhr</div>
+                            <div><strong>Ort:</strong> Raum 101</div>
+                        </div>
+                    </div>
+                </div>
+            </body></html>`;
+        } else if (type === 'cancellation_noshow') {
+            subject = "Test-Terminstornierung: Sie sind nicht zum Termin erschienen (Strategiegespräch)";
+            text = `Test-Terminstornierung\n\nSie sind zum vereinbarten Termin "Strategiegespräch" leider nicht erschienen.\n\nNeuen Termin vereinbaren:\n${sampleRebookUrl}`;
+            html = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <div style="background-color: #ef4444; color: white; padding: 20px; text-align: center;">
+                        <h2 style="margin:0;">Sie sind nicht zum Termin erschienen</h2>
+                    </div>
+                    <div style="padding: 20px; background-color: #ffffff;">
+                        <p>Hallo <strong>Test-Kunde</strong>,</p>
+                        <p>Sie sind zum vereinbarten Termin am <strong>Montag, 15. September 2026, 10:00 Uhr</strong> leider nicht erschienen.</p>
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin: 15px 0;">
+                            <div><strong>Thema:</strong> Strategiegespräch (Test)</div>
+                            <div><strong>Experte:</strong> Max Mustermann</div>
+                            <div><strong>Grund:</strong> Kunde ist nicht zum Termin erschienen</div>
+                        </div>
+                        <p>Möchten Sie einen neuen Termin vereinbaren? Über folgenden Link können Sie direkt buchen:</p>
+                        <div style="text-align: center; margin: 25px 0;">
+                            <a href="${sampleRebookUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Neuen Termin vereinbaren</a>
+                        </div>
+                    </div>
+                </div>
+            </body></html>`;
+        } else if (type === 'cancellation_sick') {
+            subject = "Test-Terminstornierung: Krankheitsbedingte Absage (Strategiegespräch)";
+            text = `Test-Terminstornierung\n\nDer Termin "Strategiegespräch" musste leider krankheitsbedingt abgesagt werden.\n\nNeuen Termin vereinbaren:\n${sampleRebookUrl}`;
+            html = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <div style="background-color: #ef4444; color: white; padding: 20px; text-align: center;">
+                        <h2 style="margin:0;">Krankheitsbedingte Absage</h2>
+                    </div>
+                    <div style="padding: 20px; background-color: #ffffff;">
+                        <p>Hallo <strong>Test-Kunde</strong>,</p>
+                        <p>der vereinbarte Termin am <strong>Montag, 15. September 2026, 10:00 Uhr</strong> musste leider krankheitsbedingt durch <strong>Max Mustermann</strong> abgesagt werden. Wir bitten die Unannehmlichkeiten zu entschuldigen.</p>
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin: 15px 0;">
+                            <div><strong>Thema:</strong> Strategiegespräch (Test)</div>
+                            <div><strong>Experte:</strong> Max Mustermann</div>
+                            <div><strong>Grund:</strong> Anbieter ist leider krank</div>
+                        </div>
+                        <p>Über folgenden Link können Sie direkt einen Ausweichtermin vereinbaren:</p>
+                        <div style="text-align: center; margin: 25px 0;">
+                            <a href="${sampleRebookUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Neuen Termin vereinbaren</a>
+                        </div>
+                    </div>
+                </div>
+            </body></html>`;
+        } else if (type === 'cancellation_other') {
+            subject = "Test-Terminstornierung: Strategiegespräch (Test)";
+            text = `Test-Terminstornierung\n\nDer Termin "Strategiegespräch" wurde abgesagt.\nBegründung: Beispiel für individuelle Nachricht.\n\nNeuen Termin vereinbaren:\n${sampleRebookUrl}`;
+            html = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <div style="background-color: #ef4444; color: white; padding: 20px; text-align: center;">
+                        <h2 style="margin:0;">✗ Termin storniert</h2>
+                    </div>
+                    <div style="padding: 20px; background-color: #ffffff;">
+                        <p>Hallo <strong>Test-Kunde</strong>,</p>
+                        <p>der vereinbarte Termin am <strong>Montag, 15. September 2026, 10:00 Uhr</strong> wurde abgesagt.</p>
+                        <p><strong>Begründung:</strong> Beispiel für eine individuelle Nachricht an den Kunden.</p>
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin: 15px 0;">
+                            <div><strong>Thema:</strong> Strategiegespräch (Test)</div>
+                            <div><strong>Experte:</strong> Max Mustermann</div>
+                        </div>
+                        <p>Über folgenden Link können Sie bei Bedarf einen neuen Termin buchen:</p>
+                        <div style="text-align: center; margin: 25px 0;">
+                            <a href="${sampleRebookUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Neuen Termin vereinbaren</a>
+                        </div>
+                    </div>
+                </div>
+            </body></html>`;
+        } else if (type === 'reminder') {
+            subject = "🔔 Test-Terminerinnerung: Strategiegespräch (Test) in 10 Minuten";
+            text = `Test-Terminerinnerung\n\nIhr Termin beginnt in 10 Minuten!\n\nThema: Strategiegespräch (Test)\nExperte: Max Mustermann\nZeit: Montag, 15. September 2026, 10:00 Uhr`;
+            html = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <div style="background-color: #f59e0b; color: white; padding: 20px; text-align: center;">
+                        <h2 style="margin:0;">🔔 Terminerinnerung (Test)</h2>
+                    </div>
+                    <div style="padding: 20px; background-color: #ffffff;">
+                        <p>Hallo <strong>Test-Kunde</strong>,</p>
+                        <p>Ihr Termin beginnt in Kürze (in 10 Minuten)!</p>
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin: 15px 0;">
+                            <div><strong>Thema:</strong> Strategiegespräch (Test)</div>
+                            <div><strong>Experte:</strong> Max Mustermann</div>
+                            <div><strong>Zeit:</strong> Montag, 15. September 2026, 10:00 Uhr</div>
+                        </div>
+                    </div>
+                </div>
+            </body></html>`;
+        }
+
         const info = await transporter.sendMail({
-            from: `"${config.smtp_from_name || 'System'}" <${config.smtp_from_email || config.smtp_user}>`,
+            from: fromAddress,
             to: recipient,
-            subject: "Test E-Mail ✔",
-            text: "Das ist eine Test-Nachricht vom Terminsystem.",
-            html: "<b>Das ist eine Test-Nachricht vom Terminsystem.</b><br>Die SMTP-Verbindung funktioniert erfolgreich."
+            subject: subject,
+            text: text,
+            html: html
         });
 
         res.json({ success: true, message: 'E-Mail gesendet: ' + info.messageId });

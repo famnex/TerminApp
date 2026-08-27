@@ -178,8 +178,8 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         }
     },
 
-    sendCancellation: async (booking) => {
-        console.log('[MailService] sendCancellation started for booking:', booking.id);
+    sendCancellation: async (booking, options = {}) => {
+        console.log('[MailService] sendCancellation started for booking:', booking.id, 'options:', options);
         try {
             const { transporter, fromAddress } = await getTransporter();
 
@@ -190,13 +190,31 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 ]
             });
             const expertEmail = fullBooking?.Provider?.email;
-            const expertName = fullBooking?.Provider?.displayName || 'Experte';
+            const expertName = fullBooking?.Provider?.displayName || 'Anbieter';
             const topicTitle = fullBooking?.Topic?.title || 'Termin';
+            const providerId = fullBooking?.providerId || fullBooking?.Topic?.userId;
+            const topicId = fullBooking?.Topic?.id;
+
+            // Fetch app_url for direct rebooking link
+            const globalSettingsList = await GlobalSettings.findAll();
+            const config = {};
+            globalSettingsList.forEach(setting => {
+                config[setting.key] = setting.value;
+            });
+            const rawAppUrl = config.app_url || 'https://cloud.mso-hef.de/termin';
+            const appUrl = rawAppUrl.replace(/\/$/, '');
+
+            // Build direct rebooking URL
+            let rebookUrl = appUrl;
+            if (providerId && topicId) {
+                rebookUrl = `${appUrl}/#/book/${providerId}?topic=${topicId}`;
+            } else if (providerId) {
+                rebookUrl = `${appUrl}/#/book/${providerId}`;
+            }
 
             const recipients = [booking.customerEmail];
             if (expertEmail) recipients.push(expertEmail);
 
-            // Filter out empty or invalid emails
             const validRecipients = recipients.filter(email => email && email.trim() !== '');
 
             if (validRecipients.length === 0) {
@@ -207,7 +225,33 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
             console.log('[MailService] Sending cancellation to:', validRecipients);
 
             const formattedDate = formatGermanDate(booking.slotStartTime);
-            const reason = booking.cancellationReason || 'Keine Angabe';
+
+            const reasonType = options.reasonType || 'other';
+            const customReason = options.customReason || booking.cancellationReason || '';
+
+            let subject = `✗ Termin storniert: ${topicTitle}`;
+            let headline = `✗ Termin storniert`;
+            let reasonLabel = 'Absage durch Anbieter';
+            let mainMessageHtml = `<p>Der folgende Termin wurde storniert:</p>`;
+            let mainMessageText = `Der folgende Termin wurde storniert:\n\n`;
+
+            if (reasonType === 'no_show') {
+                subject = `Terminstornierung: Sie sind nicht zum Termin erschienen (${topicTitle})`;
+                headline = `Sie sind nicht zum Termin erschienen`;
+                reasonLabel = `Kunde ist nicht zum Termin erschienen`;
+                mainMessageHtml = `<p>Hallo <strong>${booking.customerName || 'Kunde'}</strong>,</p><p>Sie sind zum vereinbarten Termin am <strong>${formattedDate}</strong> leider nicht erschienen.</p>`;
+                mainMessageText = `Hallo ${booking.customerName || 'Kunde'},\n\nSie sind zum vereinbarten Termin am ${formattedDate} leider nicht erschienen.\n\n`;
+            } else if (reasonType === 'sick') {
+                subject = `Terminstornierung: Krankheitsbedingte Absage (${topicTitle})`;
+                headline = `Krankheitsbedingte Absage`;
+                reasonLabel = `Anbieter ist leider krank`;
+                mainMessageHtml = `<p>Hallo <strong>${booking.customerName || 'Kunde'}</strong>,</p><p>der vereinbarte Termin am <strong>${formattedDate}</strong> musste leider krankheitsbedingt durch <strong>${expertName}</strong> abgesagt werden. Wir bitten die Unannehmlichkeiten zu entschuldigen.</p>`;
+                mainMessageText = `Hallo ${booking.customerName || 'Kunde'},\n\nder vereinbarte Termin am ${formattedDate} musste leider krankheitsbedingt durch ${expertName} abgesagt werden. Wir bitten die Unannehmlichkeiten zu entschuldigen.\n\n`;
+            } else if (customReason) {
+                reasonLabel = customReason;
+                mainMessageHtml = `<p>Hallo <strong>${booking.customerName || 'Kunde'}</strong>,</p><p>der vereinbarte Termin am <strong>${formattedDate}</strong> wurde abgesagt.</p><p><strong>Begründung:</strong> ${customReason}</p>`;
+                mainMessageText = `Hallo ${booking.customerName || 'Kunde'},\n\nder vereinbarte Termin am ${formattedDate} wurde abgesagt.\nBegründung: ${customReason}\n\n`;
+            }
 
             const htmlContent = `<!DOCTYPE html>
 <html>
@@ -215,34 +259,49 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 <meta charset="UTF-8">
 <style>
 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-.container { max-width: 600px; margin: 0 auto; padding: 20px; }
-.header { background-color: #f44336; color: white; padding: 20px; text-align: center; }
-.content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
-.detail { margin: 10px 0; }
+.container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; }
+.header { background-color: #ef4444; color: white; padding: 20px; text-align: center; border-radius: 6px 6px 0 0; }
+.content { background-color: #ffffff; padding: 20px; }
+.detail-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin: 15px 0; }
+.detail { margin: 8px 0; }
+.btn-container { text-align: center; margin: 25px 0; }
+.btn { background-color: #2563eb; color: #ffffff !important; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; }
 </style>
 </head>
 <body>
 <div class="container">
 <div class="header">
-<h2>✗ Termin storniert</h2>
+<h2 style="margin:0;">${headline}</h2>
 </div>
 <div class="content">
-<p>Der folgende Termin wurde storniert:</p>
+${mainMessageHtml}
+<div class="detail-box">
 <div class="detail"><strong>Thema:</strong> ${topicTitle}</div>
 <div class="detail"><strong>Experte:</strong> ${expertName}</div>
 <div class="detail"><strong>Zeit:</strong> ${formattedDate}</div>
-<div class="detail"><strong>Grund:</strong> ${reason}</div>
+<div class="detail"><strong>Grund/Status:</strong> ${reasonLabel}</div>
+</div>
+
+<p>Möchten Sie einen neuen Termin vereinbaren? Über den folgenden Link können Sie schnell und direkt einen neuen Termin buchen:</p>
+
+<div class="btn-container">
+<a href="${rebookUrl}" class="btn" target="_blank">Neuen Termin vereinbaren</a>
+</div>
+<p style="font-size: 12px; color: #64748b; text-align: center;">
+Link funktioniert nicht? Kopieren Sie folgende Adresse in Ihren Browser:<br>
+<a href="${rebookUrl}" style="color: #2563eb;">${rebookUrl}</a>
+</p>
 </div>
 </div>
 </body>
 </html>`;
 
-            const textContent = `Termin storniert\n\nDer folgende Termin wurde storniert:\n\nThema: ${topicTitle}\nExperte: ${expertName}\nZeit: ${formattedDate}\nGrund: ${reason}`;
+            const textContent = `${headline}\n\n${mainMessageText}Termindetails:\n- Thema: ${topicTitle}\n- Experte: ${expertName}\n- Zeit: ${formattedDate}\n\nNeuen Termin vereinbaren:\n${rebookUrl}`;
 
             const info = await transporter.sendMail({
                 from: fromAddress,
                 to: validRecipients,
-                subject: '✗ Termin storniert: ' + topicTitle,
+                subject: subject,
                 text: textContent,
                 html: htmlContent
             });

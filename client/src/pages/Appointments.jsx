@@ -5,6 +5,9 @@ import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Calendar, Clock, User, Phone, Mail, Trash2, XCircle, ChevronLeft, Archive, RotateCcw, Edit2, Check, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 import { toast } from 'sonner';
 
 const Appointments = () => {
@@ -17,6 +20,12 @@ const Appointments = () => {
     // Contact Inline Edit State
     const [editingBookingId, setEditingBookingId] = useState(null);
     const [editFormData, setEditFormData] = useState({ customerName: '', customerEmail: '', customerPhone: '' });
+
+    // Cancellation Modal State
+    const [cancellingBooking, setCancellingBooking] = useState(null);
+    const [cancelReasonType, setCancelReasonType] = useState('no_show'); // 'no_show', 'sick', 'other'
+    const [customCancelReason, setCustomCancelReason] = useState('');
+    const [submittingCancel, setSubmittingCancel] = useState(false);
 
     const fetchBookings = async (isArchived = false) => {
         setLoading(true);
@@ -63,13 +72,29 @@ const Appointments = () => {
         setEditingBookingId(null);
     };
 
-    const handleCancel = async (id) => {
-        if (!window.confirm('Möchten Sie diesen Termin wirklich stornieren? Der Kunde wird benachrichtigt.')) return;
+    const openCancelModal = (booking) => {
+        setCancellingBooking(booking);
+        setCancelReasonType('no_show');
+        setCustomCancelReason('');
+    };
+
+    const submitCancellation = async (e) => {
+        e.preventDefault();
+        if (!cancellingBooking) return;
+        setSubmittingCancel(true);
         try {
-            await api.post(`/bookings/${id}/cancel`, { reason: 'Storniert durch Anbieter' });
+            await api.post(`/bookings/${cancellingBooking.id}/cancel`, {
+                reasonType: cancelReasonType,
+                customReason: cancelReasonType === 'other' ? customCancelReason : ''
+            });
+            toast.success('Termin wurde abgesagt und der Kunde wurde benachrichtigt.');
+            setCancellingBooking(null);
             fetchBookings(activeTab === 'archived');
         } catch (err) {
-            alert('Fehler beim Stornieren: ' + (err.response?.data?.error || err.message));
+            console.error(err);
+            toast.error('Fehler beim Absagen: ' + (err.response?.data?.error || err.message));
+        } finally {
+            setSubmittingCancel(false);
         }
     };
 
@@ -253,7 +278,7 @@ const Appointments = () => {
                                             </button>
                                             {!isCancelled && (
                                                 <button
-                                                    onClick={() => handleCancel(booking.id)}
+                                                    onClick={() => openCancelModal(booking)}
                                                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
                                                     title="Termin absagen"
                                                 >
@@ -286,6 +311,106 @@ const Appointments = () => {
             )}
 
             {!loading && bookings.length === 0 && <EmptyState />}
+
+            {/* CANCELLATION MODAL */}
+            <Dialog open={!!cancellingBooking} onOpenChange={(open) => !open && setCancellingBooking(null)}>
+                <DialogContent className="sm:max-w-[480px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl text-destructive flex items-center gap-2">
+                            <XCircle className="h-5 w-5" /> Termin absagen
+                        </DialogTitle>
+                        <DialogDescription>
+                            Bitte wählen Sie den Grund für die Absage. Der Kunde erhält eine E-Mail mit Erklärung und einem Link zum schnellen Neubuchen.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {cancellingBooking && (
+                        <form onSubmit={submitCancellation} className="space-y-4 py-2">
+                            <div className="p-3 bg-muted/50 rounded-lg text-sm space-y-1 border">
+                                <div className="font-semibold text-foreground">{cancellingBooking.Topic?.title || 'Termin'}</div>
+                                <div className="text-muted-foreground flex items-center gap-3 text-xs">
+                                    <span>{cancellingBooking.customerName} ({cancellingBooking.customerEmail})</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <Label className="text-sm font-medium">Grund der Absage wählen:</Label>
+
+                                <div className="space-y-2">
+                                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${cancelReasonType === 'no_show' ? 'border-primary bg-primary/5 font-medium' : 'hover:bg-muted/30'}`}>
+                                        <input
+                                            type="radio"
+                                            name="reasonType"
+                                            value="no_show"
+                                            checked={cancelReasonType === 'no_show'}
+                                            onChange={() => setCancelReasonType('no_show')}
+                                            className="mt-1"
+                                        />
+                                        <div>
+                                            <div className="text-sm font-medium">Sie sind nicht zum Termin erschienen</div>
+                                            <div className="text-xs text-muted-foreground">Der Kunde erhält eine freundliche Info, dass der Termin verpasst wurde, inkl. Link für einen Ausweichtermin.</div>
+                                        </div>
+                                    </label>
+
+                                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${cancelReasonType === 'sick' ? 'border-primary bg-primary/5 font-medium' : 'hover:bg-muted/30'}`}>
+                                        <input
+                                            type="radio"
+                                            name="reasonType"
+                                            value="sick"
+                                            checked={cancelReasonType === 'sick'}
+                                            onChange={() => setCancelReasonType('sick')}
+                                            className="mt-1"
+                                        />
+                                        <div>
+                                            <div className="text-sm font-medium">Anbieter ist leider krank</div>
+                                            <div className="text-xs text-muted-foreground">Der Kunde erhält eine Information über den krankheitsbedingten Ausfall mit Entschuldigung und Direkt-Link zum Neubuchen.</div>
+                                        </div>
+                                    </label>
+
+                                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${cancelReasonType === 'other' ? 'border-primary bg-primary/5 font-medium' : 'hover:bg-muted/30'}`}>
+                                        <input
+                                            type="radio"
+                                            name="reasonType"
+                                            value="other"
+                                            checked={cancelReasonType === 'other'}
+                                            onChange={() => setCancelReasonType('other')}
+                                            className="mt-1"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="text-sm font-medium">Sonstiges</div>
+                                            <div className="text-xs text-muted-foreground">Eigene Begründung oder Nachricht an den Kunden verfassen.</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {cancelReasonType === 'other' && (
+                                <div className="space-y-2 animate-in fade-in duration-200">
+                                    <Label htmlFor="customReason" className="text-xs font-semibold">Nachricht / Begründung an den Kunden:</Label>
+                                    <textarea
+                                        id="customReason"
+                                        rows={3}
+                                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                        placeholder="z.B. Termin muss aus organisatorischen Gründen leider verschoben werden."
+                                        value={customCancelReason}
+                                        onChange={(e) => setCustomCancelReason(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            )}
+
+                            <DialogFooter className="gap-2 pt-2">
+                                <Button type="button" variant="outline" onClick={() => setCancellingBooking(null)}>
+                                    Abbrechen
+                                </Button>
+                                <Button type="submit" variant="destructive" disabled={submittingCancel}>
+                                    {submittingCancel ? 'Absagen...' : 'Termin kostenfrei absagen'}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

@@ -61,7 +61,7 @@ router.post('/:id/cancel', async (req, res) => {
     try {
         const userId = req.user.id;
         const { id } = req.params;
-        const { reason } = req.body;
+        const { reasonType, customReason, reason } = req.body;
 
         const booking = await Booking.findByPk(id, {
             include: [Topic]
@@ -76,11 +76,18 @@ router.post('/:id/cancel', async (req, res) => {
 
         if (booking.status === 'cancelled') return res.status(400).json({ error: 'Already cancelled' });
 
+        let cancellationReasonText = customReason || reason || 'Storniert durch Anbieter';
+        if (reasonType === 'no_show') {
+            cancellationReasonText = 'Kunde ist nicht zum Termin erschienen';
+        } else if (reasonType === 'sick') {
+            cancellationReasonText = 'Anbieter krankheitsbedingt verhindert';
+        }
+
         booking.status = 'cancelled';
-        booking.cancellationReason = reason || 'Cancelled by provider';
+        booking.cancellationReason = cancellationReasonText;
         await booking.save();
 
-        await mailService.sendCancellation(booking).catch(console.error);
+        await mailService.sendCancellation(booking, { reasonType, customReason }).catch(console.error);
 
         res.json({ success: true, booking });
     } catch (err) {
