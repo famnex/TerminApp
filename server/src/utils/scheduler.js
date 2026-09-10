@@ -35,9 +35,10 @@ async function getAvailableSlots(userId, startDateStr, endDateStr, topicId) {
     const now = new Date();
     const minSlotTime = addHours(now, minNoticeHours);
 
-    // 1. Fetch Availability Rules
+    // 1. Fetch Availability Rules (including linked topics)
     const availabilities = await Availability.findAll({
-        where: { userId }
+        where: { userId },
+        include: [{ model: Topic, through: { attributes: [] }, attributes: ['id'] }]
     });
 
     // 2. Fetch Time Offs (Blocked Days)
@@ -92,6 +93,12 @@ async function getAvailableSlots(userId, startDateStr, endDateStr, topicId) {
 
         // Filter rules relevant to this day
         const activeRules = availabilities.filter(rule => {
+            // Check Topic assignment (if specified, rule only applies to listed topics)
+            if (rule.Topics && rule.Topics.length > 0) {
+                const matchesTopic = rule.Topics.some(t => t.id.toString() === topicId.toString());
+                if (!matchesTopic) return false;
+            }
+
             // Check date validity
             if (rule.validUntil && isAfter(currentDate, parseISO(rule.validUntil))) return false;
 

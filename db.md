@@ -33,6 +33,12 @@ Diese Datei dokumentiert die Struktur der Datenbank für die TerminApp.
 - `createdAt`: DATETIME
 - `updatedAt`: DATETIME
 
+### AvailabilityTopics (Many-to-Many: Availability <-> Topic)
+- `availabilityId`: INTEGER (Foreign Key -> Availabilities.id, On Delete: CASCADE)
+- `topicId`: INTEGER (Foreign Key -> Topics.id, On Delete: CASCADE)
+- `createdAt`: DATETIME
+- `updatedAt`: DATETIME
+
 ### Topics
 - `id`: INTEGER (Primary Key, Auto-increment)
 - `title`: STRING (Not Null)

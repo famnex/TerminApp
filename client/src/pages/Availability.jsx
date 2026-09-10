@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import { Calendar as CalendarIcon, Clock, Plus, Trash2, ChevronLeft, Repeat, CalendarDays, AlertCircle, CalendarOff, Palmtree } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Trash2, Edit2, ChevronLeft, Repeat, CalendarDays, AlertCircle, CalendarOff, Palmtree, Tag } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -17,11 +17,17 @@ const Availability = () => {
     const navigate = useNavigate();
     const [availabilities, setAvailabilities] = useState([]);
     const [timeOffs, setTimeOffs] = useState([]);
+    const [userTopics, setUserTopics] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // UI State
     const [activeTab, setActiveTab] = useState('weekly'); // weekly, rotating, specific, absences
     const [showModal, setShowModal] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+
+    // Topic Selection State
+    const [topicSelectionMode, setTopicSelectionMode] = useState('all'); // 'all' or 'specific'
+    const [selectedTopicIds, setSelectedTopicIds] = useState([]);
 
     // Form State (Availability)
     const [newItem, setNewItem] = useState({
@@ -57,12 +63,14 @@ const Availability = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [availRes, timeOffRes] = await Promise.all([
+            const [availRes, timeOffRes, topicRes] = await Promise.all([
                 api.get('/availability/mine'),
-                api.get('/timeoff/mine')
+                api.get('/timeoff/mine'),
+                api.get('/topics/mine')
             ]);
             setAvailabilities(availRes.data);
             setTimeOffs(timeOffRes.data);
+            setUserTopics(topicRes.data);
         } catch (err) {
             console.error(err);
             toast.error("Fehler beim Laden der Daten.");
@@ -76,12 +84,20 @@ const Availability = () => {
         try {
             const payload = {
                 ...newItem,
-                validUntil: newItem.validUntil === '' ? null : newItem.validUntil
+                validUntil: newItem.validUntil === '' ? null : newItem.validUntil,
+                topicIds: topicSelectionMode === 'specific' ? selectedTopicIds : []
             };
-            await api.post('/availability', payload);
+
+            if (editingId) {
+                await api.put(`/availability/${editingId}`, payload);
+                toast.success("Verfügbarkeit erfolgreich aktualisiert.");
+            } else {
+                await api.post('/availability', payload);
+                toast.success("Verfügbarkeit erfolgreich gespeichert.");
+            }
+
             setShowModal(false);
             fetchData();
-            toast.success("Verfügbarkeit erfolgreich gespeichert.");
         } catch (err) {
             toast.error('Fehler beim Speichern: ' + (err.response?.data?.error || err.message));
         }
@@ -133,6 +149,9 @@ const Availability = () => {
     };
 
     const openModal = (prefillType = 'weekly', dayId = 1) => {
+        setEditingId(null);
+        setTopicSelectionMode('all');
+        setSelectedTopicIds([]);
         if (activeTab === 'absences') {
             setNewTimeOff({
                 startDate: format(new Date(), 'yyyy-MM-dd'),
@@ -149,6 +168,28 @@ const Availability = () => {
                 validUntil: ''
             });
         }
+        setShowModal(true);
+    };
+
+    const openEditModal = (slot) => {
+        setEditingId(slot.id);
+        setNewItem({
+            type: slot.type,
+            dayOfWeek: slot.dayOfWeek !== null && slot.dayOfWeek !== undefined ? slot.dayOfWeek : 1,
+            specificDate: slot.specificDate || format(new Date(), 'yyyy-MM-dd'),
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            validUntil: slot.validUntil || ''
+        });
+
+        if (slot.Topics && slot.Topics.length > 0) {
+            setTopicSelectionMode('specific');
+            setSelectedTopicIds(slot.Topics.map(t => t.id));
+        } else {
+            setTopicSelectionMode('all');
+            setSelectedTopicIds([]);
+        }
+
         setShowModal(true);
     };
 
@@ -232,7 +273,7 @@ const Availability = () => {
                                             <div className="py-2 text-sm text-muted-foreground italic flex items-center gap-2"><AlertCircle size={14} className="opacity-50" /> Keine Zeiten eingetragen</div>
                                         ) : (
                                             slots.map(slot => (
-                                                <div key={slot.id} className="group relative bg-background border border-border rounded-lg pl-3 pr-8 py-2 shadow-sm text-sm flex items-center gap-3 transition-all hover:bg-accent/10 hover:border-primary/30">
+                                                <div key={slot.id} className="group relative bg-background border border-border rounded-lg pl-3 pr-14 py-2 shadow-sm text-sm flex flex-wrap items-center gap-2.5 transition-all hover:bg-accent/10 hover:border-primary/30">
                                                     {activeTab === 'rotating' && (
                                                         <span className={cn(
                                                             "text-[10px] uppercase font-bold px-1.5 py-0.5 rounded",
@@ -243,24 +284,45 @@ const Availability = () => {
                                                     )}
                                                     <span className="font-mono font-medium">{slot.startTime} - {slot.endTime}</span>
 
+                                                    {/* TOPIC BADGES */}
+                                                    {(!slot.Topics || slot.Topics.length === 0) ? (
+                                                        <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Alle Themen</span>
+                                                    ) : (
+                                                        <span className="text-[10px] text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 rounded font-medium" title={slot.Topics.map(t => t.title).join(', ')}>
+                                                            {slot.Topics.length === 1 ? slot.Topics[0].title : `${slot.Topics.length} Themen`}
+                                                        </span>
+                                                    )}
+
                                                     {slot.validUntil && (
                                                         <span className="text-[10px] text-muted-foreground flex items-center gap-1 bg-muted px-1.5 py-0.5 rounded">
                                                             <CalendarOff size={10} /> bis {format(parseISO(slot.validUntil), 'dd.MM.yyyy')}
                                                         </span>
                                                     )}
 
-                                                    {slot.batchConfigId ? (
-                                                        <div title="Vom Admin verwaltet" className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground/50 cursor-not-allowed opacity-0 group-hover:opacity-100">
-                                                            <Trash2 size={14} />
-                                                        </div>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => deleteAvailability(slot.id)}
-                                                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-destructive rounded-md hover:bg-destructive/10 transition-all opacity-0 group-hover:opacity-100"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    )}
+                                                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+                                                        {!slot.batchConfigId && (
+                                                            <button
+                                                                onClick={() => openEditModal(slot)}
+                                                                className="p-1 text-muted-foreground hover:text-primary rounded-md hover:bg-primary/10 transition-all"
+                                                                title="Verfügbarkeit bearbeiten"
+                                                            >
+                                                                <Edit2 size={14} />
+                                                            </button>
+                                                        )}
+                                                        {slot.batchConfigId ? (
+                                                            <div title="Vom Admin verwaltet" className="p-1 text-muted-foreground/50 cursor-not-allowed">
+                                                                <Trash2 size={14} />
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => deleteAvailability(slot.id)}
+                                                                className="p-1 text-muted-foreground hover:text-destructive rounded-md hover:bg-destructive/10 transition-all"
+                                                                title="Verfügbarkeit löschen"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             ))
                                         )}
@@ -303,13 +365,30 @@ const Availability = () => {
                                         <div className="flex items-center gap-2 text-2xl font-bold">
                                             {slot.startTime} <span className="text-muted-foreground/40 font-light">-</span> {slot.endTime}
                                         </div>
-                                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                                        {/* TOPIC BADGES */}
+                                        <div className="mt-3">
+                                            {(!slot.Topics || slot.Topics.length === 0) ? (
+                                                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">Alle Themen</span>
+                                            ) : (
+                                                <span className="text-xs text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded font-medium">
+                                                    {slot.Topics.map(t => t.title).join(', ')}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {!slot.batchConfigId && (
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => openEditModal(slot)} title="Bearbeiten">
+                                                    <Edit2 size={16} />
+                                                </Button>
+                                            )}
                                             {slot.batchConfigId ? (
                                                 <div title="Vom Admin verwaltet" className="p-2 text-muted-foreground/50 cursor-not-allowed">
                                                     <Trash2 size={16} />
                                                 </div>
                                             ) : (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteAvailability(slot.id)}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteAvailability(slot.id)} title="Löschen">
                                                     <Trash2 size={16} />
                                                 </Button>
                                             )}
@@ -390,13 +469,17 @@ const Availability = () => {
 
             {/* DIALOG MODAL */}
             <Dialog open={showModal} onOpenChange={setShowModal}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader>
-                        <DialogTitle>{activeTab === 'absences' ? 'Abwesenheit eintragen' : 'Verfügbarkeit hinzufügen'}</DialogTitle>
+                        <DialogTitle>
+                            {activeTab === 'absences'
+                                ? 'Abwesenheit eintragen'
+                                : (editingId ? 'Verfügbarkeit bearbeiten' : 'Verfügbarkeit hinzufügen')}
+                        </DialogTitle>
                         <DialogDescription>
                             {activeTab === 'absences'
                                 ? 'Blockieren Sie einen Zeitraum (z.B. Urlaub).'
-                                : 'Fügen Sie einen neuen Zeitraum hinzu, in dem Sie buchbar sind.'}
+                                : 'Fügen Sie einen Zeitraum hinzu oder bearbeiten Sie diesen, in dem Sie buchbar sind.'}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -513,6 +596,58 @@ const Availability = () => {
                                 </div>
                             </div>
 
+                            {/* THEMENZUORDNUNG */}
+                            <div className="space-y-2 pt-2 border-t">
+                                <Label className="text-sm font-semibold">Themenzuordnung</Label>
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                                        <input
+                                            type="radio"
+                                            name="topicSelectionMode"
+                                            value="all"
+                                            checked={topicSelectionMode === 'all'}
+                                            onChange={() => setTopicSelectionMode('all')}
+                                        />
+                                        <span>Gilt für alle Themen (Standard)</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                                        <input
+                                            type="radio"
+                                            name="topicSelectionMode"
+                                            value="specific"
+                                            checked={topicSelectionMode === 'specific'}
+                                            onChange={() => setTopicSelectionMode('specific')}
+                                        />
+                                        <span>Nur für bestimmte Themen</span>
+                                    </label>
+                                </div>
+
+                                {topicSelectionMode === 'specific' && (
+                                    <div className="p-3 bg-muted/40 rounded-lg space-y-2 max-h-36 overflow-y-auto border text-sm mt-2">
+                                        {userTopics.length === 0 ? (
+                                            <p className="text-xs text-muted-foreground italic">Keine Themen vorhanden.</p>
+                                        ) : (
+                                            userTopics.map(t => (
+                                                <label key={t.id} className="flex items-center gap-2 cursor-pointer select-none">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedTopicIds.includes(t.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedTopicIds([...selectedTopicIds, t.id]);
+                                                            } else {
+                                                                setSelectedTopicIds(selectedTopicIds.filter(id => id !== t.id));
+                                                            }
+                                                        }}
+                                                    />
+                                                    <span>{t.title}</span>
+                                                </label>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
                             {/* VALID UNTIL (Optional) - Only relevant for recurring rules */}
                             {newItem.type !== 'specific_date' && (
                                 <div className="space-y-2 pt-2 border-t">
@@ -534,7 +669,7 @@ const Availability = () => {
 
                             <DialogFooter className="pt-4">
                                 <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Abbrechen</Button>
-                                <Button type="submit">Speichern</Button>
+                                <Button type="submit">{editingId ? 'Aktualisieren' : 'Speichern'}</Button>
                             </DialogFooter>
                         </form>
                     )}

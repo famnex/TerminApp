@@ -102,8 +102,16 @@ const mailService = {
 
             console.log('[MailService] Sending confirmation to:', validRecipients);
 
+            const globalSettingsList = await GlobalSettings.findAll();
+            const config = {};
+            globalSettingsList.forEach(setting => {
+                config[setting.key] = setting.value;
+            });
+            const rawAppUrl = config.app_url || 'https://cloud.mso-hef.de/termin';
+            const appUrl = rawAppUrl.replace(/\/$/, '');
+
             const formattedDate = formatGermanDate(booking.slotStartTime);
-            const cancelUrl = `http://localhost:5173/cancel/${booking.cancellationToken}`;
+            const cancelUrl = `${appUrl}/#/cancel/${booking.cancellationToken}`;
 
             // Create iCal with full details
             const calendar = ical({ name: 'Terminbuchung' });
@@ -114,7 +122,7 @@ const mailService = {
                 description: `Termin mit ${expertName}\nThema: ${topicTitle}\nOrt: ${location}`,
                 location: location,
                 url: cancelUrl,
-                organizer: { name: expertName, email: expertEmail || 'noreply@localhost' },
+                organizer: { name: expertName, email: expertEmail || config.smtp_from_email || config.smtp_user || 'noreply@cloud.mso-hef.de' },
                 attendees: [
                     { name: booking.customerName || 'Teilnehmer', email: booking.customerEmail }
                 ]
@@ -408,6 +416,14 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 return;
             }
 
+            const globalSettingsList = await GlobalSettings.findAll();
+            const config = {};
+            globalSettingsList.forEach(setting => {
+                config[setting.key] = setting.value;
+            });
+            const rawAppUrl = config.app_url || 'https://cloud.mso-hef.de/termin';
+            const appUrl = rawAppUrl.replace(/\/$/, '');
+
             // Build HTML table
             let htmlRows = '';
             let textRows = '';
@@ -417,7 +433,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 const expertName = booking?.Provider?.displayName || 'Experte';
                 const location = booking?.Provider?.location || 'Online / Vor Ort';
                 const formattedDate = formatGermanDate(booking.slotStartTime);
-                const cancelUrl = `http://localhost:5173/cancel/${booking.cancellationToken}`;
+                const cancelUrl = `${appUrl}/#/cancel/${booking.cancellationToken}`;
 
                 htmlRows += `
                     <tr>

@@ -45,6 +45,10 @@ Booking.belongsTo(User, { as: 'Provider', foreignKey: 'providerId' }); // The ex
 Topic.hasMany(Booking, { foreignKey: 'topicId' });
 Booking.belongsTo(Topic, { foreignKey: 'topicId' });
 
+// Availability <-> Topic (Many-to-Many for topic-specific availabilities)
+Availability.belongsToMany(Topic, { through: 'AvailabilityTopics', foreignKey: 'availabilityId', onDelete: 'CASCADE' });
+Topic.belongsToMany(Availability, { through: 'AvailabilityTopics', foreignKey: 'topicId', onDelete: 'CASCADE' });
+
 module.exports = {
     sequelize,
     User,

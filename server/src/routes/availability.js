@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { Availability } = require('../models');
+const { Availability, Topic } = require('../models');
 
 // GET /api/availability/mine
 router.get('/mine', async (req, res) => {
     try {
-        const userId = req.user.id; // From auth middleware (req.user set by jwt)
+        const userId = req.user.id;
         const availabilities = await Availability.findAll({
-            where: { userId }
+            where: { userId },
+            include: [{ model: Topic, through: { attributes: [] }, attributes: ['id', 'title'] }]
         });
         res.json(availabilities);
     } catch (err) {
@@ -19,7 +20,7 @@ router.get('/mine', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const userId = req.user.id;
-        const { type, dayOfWeek, specificDate, startTime, endTime, validUntil } = req.body;
+        const { type, dayOfWeek, specificDate, startTime, endTime, validUntil, topicIds } = req.body;
 
         const availability = await Availability.create({
             userId,
@@ -28,10 +29,51 @@ router.post('/', async (req, res) => {
             specificDate, // "YYYY-MM-DD"
             startTime, // "HH:mm"
             endTime,   // "HH:mm"
-            validUntil // "YYYY-MM-DD" or null
+            validUntil: validUntil || null
         });
 
-        res.status(201).json(availability);
+        if (Array.isArray(topicIds) && topicIds.length > 0) {
+            await availability.setTopics(topicIds);
+        }
+
+        const fullAvailability = await Availability.findByPk(availability.id, {
+            include: [{ model: Topic, through: { attributes: [] }, attributes: ['id', 'title'] }]
+        });
+
+        res.status(201).json(fullAvailability);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PUT /api/availability/:id
+router.put('/:id', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { id } = req.params;
+        const { type, dayOfWeek, specificDate, startTime, endTime, validUntil, topicIds } = req.body;
+
+        const availability = await Availability.findOne({ where: { id, userId } });
+        if (!availability) return res.status(404).json({ error: 'Availability not found' });
+
+        if (type !== undefined) availability.type = type;
+        if (dayOfWeek !== undefined) availability.dayOfWeek = dayOfWeek;
+        if (specificDate !== undefined) availability.specificDate = specificDate;
+        if (startTime !== undefined) availability.startTime = startTime;
+        if (endTime !== undefined) availability.endTime = endTime;
+        if (validUntil !== undefined) availability.validUntil = validUntil || null;
+
+        await availability.save();
+
+        if (Array.isArray(topicIds)) {
+            await availability.setTopics(topicIds);
+        }
+
+        const fullAvailability = await Availability.findByPk(availability.id, {
+            include: [{ model: Topic, through: { attributes: [] }, attributes: ['id', 'title'] }]
+        });
+
+        res.json(fullAvailability);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
