@@ -730,6 +730,29 @@ router.put('/departments/:id', async (req, res) => {
     }
 });
 
+// PUT /api/admin/departments/:id/default
+router.put('/departments/:id/default', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const department = await Department.findByPk(id);
+        if (!department) return res.status(404).json({ error: 'Department not found' });
+
+        const newDefaultState = !department.isDefault;
+
+        // Reset all departments' isDefault flag first so only at most one is default
+        await Department.update({ isDefault: false }, { where: {} });
+
+        if (newDefaultState) {
+            department.isDefault = true;
+            await department.save();
+        }
+
+        res.json({ success: true, isDefault: newDefaultState, departmentId: department.id });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // DELETE /api/admin/departments/:id
 router.delete('/departments/:id', async (req, res) => {
     try {

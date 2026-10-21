@@ -359,7 +359,7 @@ const BatchProcessing = () => {
                             />
                             <div className="grid gap-1.5 leading-none">
                                 <Label htmlFor="future" className="cursor-pointer font-semibold">
-                                    {targetType === 'user' ? 'Auch für zukünftige Benutzer anwenden' : 'Automatisch synchronisieren'}
+                                    {targetType === 'user' ? 'Auch für zukünftige Benutzer anwenden' : 'Auch für zukünftige Benutzer anwenden (Automatisch synchronisieren)'}
                                 </Label>
                                 <p className="text-sm text-muted-foreground">
                                     {targetType === 'user'

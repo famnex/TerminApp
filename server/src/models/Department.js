@@ -10,6 +10,10 @@ const Department = sequelize.define('Department', {
     description: {
         type: DataTypes.STRING,
         allowNull: true
+    },
+    isDefault: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
     }
 });
 

@@ -79,6 +79,13 @@ sequelize.sync().then(async () => {
         // Safe to ignore if column already exists
     }
 
+    try {
+        await sequelize.query("ALTER TABLE Departments ADD COLUMN isDefault BOOLEAN DEFAULT 0");
+        console.log('Database upgrade: Added isDefault column to Departments table');
+    } catch (dbErr) {
+        // Safe to ignore if column already exists
+    }
+
     // Start Jobs
     const startReminderJob = require('./jobs/reminders');
     startReminderJob();

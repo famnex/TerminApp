@@ -104,6 +104,7 @@ Diese Datei dokumentiert die Struktur der Datenbank für die TerminApp.
 - `id`: INTEGER (Primary Key, Auto-increment)
 - `name`: STRING (Unique, Not Null)
 - `description`: STRING
+- `isDefault`: BOOLEAN (Default: false)
 - `createdAt`: DATETIME
 - `updatedAt`: DATETIME
 

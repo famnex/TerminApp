@@ -58,16 +58,41 @@ User.beforeCreate(async (user) => {
 
 User.afterCreate(async (user) => {
     try {
-        const { BatchConfig, Topic, Availability } = sequelize.models;
+        const { BatchConfig, Topic, Availability, Department } = sequelize.models;
 
-        // Find all batch configs that apply to future users
-        const batches = await BatchConfig.findAll({
-            where: { applyToFuture: true }
+        // 1. Check for Default Department (starred department) and assign new user
+        let defaultDept = null;
+        if (Department) {
+            defaultDept = await Department.findOne({ where: { isDefault: true } });
+            if (defaultDept) {
+                console.log(`[Department] Assigning new user ${user.id} (${user.username}) to default department '${defaultDept.name}' (${defaultDept.id})`);
+                await user.addDepartment(defaultDept);
+            }
+        }
+
+        // 2. Find user-based batch configs that apply to all future users
+        const userBatches = await BatchConfig.findAll({
+            where: { targetType: 'user', applyToFuture: true }
         });
 
-        if (batches && batches.length > 0) {
-            console.log(`[Batch] Applying ${batches.length} rules to new user ${user.id}`);
-            const promises = batches.map(batch => {
+        // 3. Find department-based batch configs for the default department (if any) with applyToFuture: true
+        let deptBatches = [];
+        if (defaultDept) {
+            deptBatches = await BatchConfig.findAll({
+                where: { targetType: 'department', applyToFuture: true },
+                include: [{
+                    model: Department,
+                    where: { id: defaultDept.id },
+                    required: true
+                }]
+            });
+        }
+
+        const allBatches = [...userBatches, ...deptBatches];
+
+        if (allBatches.length > 0) {
+            console.log(`[Batch] Applying ${allBatches.length} rules to new user ${user.id}`);
+            const promises = allBatches.map(batch => {
                 if (batch.type === 'topic') {
                     return Topic.create({
                         ...batch.configData,
@@ -85,7 +110,7 @@ User.afterCreate(async (user) => {
             await Promise.all(promises);
         }
     } catch (err) {
-        console.error('[Batch] Error applying future rules:', err);
+        console.error('[Batch] Error applying future rules / default department:', err);
     }
 });
 

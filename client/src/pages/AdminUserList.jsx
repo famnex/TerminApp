@@ -20,7 +20,8 @@ import {
     TableRow,
 } from "../components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Building2, Users as UsersIcon } from 'lucide-react';
+import { Building2, Users as UsersIcon, Star } from 'lucide-react';
+import { toast } from 'sonner';
 
 const AdminUserList = () => {
     const [users, setUsers] = useState([]);
@@ -163,6 +164,20 @@ const AdminUserList = () => {
             fetchUsers();
         } catch (err) {
             setError(err.response?.data?.error || 'Fehler beim Löschen.');
+        }
+    };
+
+    const handleToggleDefaultDept = async (dept) => {
+        try {
+            const res = await api.put(`/admin/departments/${dept.id}/default`);
+            if (res.data.isDefault) {
+                toast.success(`"${dept.name}" ist jetzt die Standardabteilung für neue Benutzer.`);
+            } else {
+                toast.info(`"${dept.name}" ist nicht mehr als Standardabteilung markiert.`);
+            }
+            fetchUsers();
+        } catch (err) {
+            setError(err.response?.data?.error || 'Fehler beim Festlegen der Standardabteilung.');
         }
     };
 
@@ -394,11 +409,29 @@ const AdminUserList = () => {
                         <CardContent>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {departments.map(dept => (
-                                    <Card key={dept.id}>
+                                    <Card key={dept.id} className={dept.isDefault ? "border-amber-400 bg-amber-50/20 shadow-sm" : ""}>
                                         <CardHeader className="pb-2">
                                             <div className="flex justify-between items-start">
-                                                <CardTitle className="text-base">{dept.name}</CardTitle>
+                                                <div className="flex flex-col gap-1">
+                                                    <CardTitle className="text-base flex items-center gap-2">
+                                                        {dept.name}
+                                                    </CardTitle>
+                                                    {dept.isDefault && (
+                                                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full w-fit">
+                                                            <Star size={11} className="fill-amber-500 text-amber-500" /> Standard für neue Benutzer
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div className="flex gap-1">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className={`h-6 w-6 ${dept.isDefault ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground hover:text-amber-500'}`}
+                                                        onClick={() => handleToggleDefaultDept(dept)}
+                                                        title={dept.isDefault ? "Als Standardabteilung für neue Benutzer entfernen" : "Als Standardabteilung für neue Benutzer festlegen"}
+                                                    >
+                                                        <Star size={14} className={dept.isDefault ? "fill-amber-400 text-amber-500" : ""} />
+                                                    </Button>
                                                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openDeptModal(dept)}>
                                                         <Edit2 size={14} />
                                                     </Button>
