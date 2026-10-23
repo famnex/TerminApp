@@ -15,6 +15,7 @@ Diese Datei dokumentiert die Struktur der Datenbank für die TerminApp.
 - `profileImage`: STRING
 - `showEmail`: BOOLEAN (Default: true)
 - `location`: STRING
+- `locationType`: STRING (Default: 'none' - Werte: 'none', 'room', 'custom', 'secretariat')
 - `isAdmin`: BOOLEAN (Default: false)
 - `bookingPageActive`: BOOLEAN (Default: false)
 - `createdAt`: DATETIME

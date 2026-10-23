@@ -7,7 +7,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
-import { ChevronLeft, Camera, Loader2, Save, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, Camera, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 
 const Profile = () => {
@@ -18,7 +18,9 @@ const Profile = () => {
         displayName: '',
         email: '',
         position: '',
-        location: '',
+        locationType: 'none', // 'none', 'room', 'custom', 'secretariat'
+        roomNumber: '',
+        customLocation: '',
         showEmail: true,
         profileImage: '',
         departmentId: '',
@@ -47,11 +49,30 @@ const Profile = () => {
                     ? currentUserData.Departments[0].id.toString()
                     : '';
 
+                const rawLocation = (currentUserData.location || '').trim();
+                let initialLocationType = currentUserData.locationType;
+
+                // Migration fallback: empty = 'none', filled = 'custom'
+                if (!initialLocationType) {
+                    initialLocationType = rawLocation ? 'custom' : 'none';
+                }
+
+                let initialRoomNumber = '';
+                let initialCustomLocation = '';
+
+                if (initialLocationType === 'room') {
+                    initialRoomNumber = rawLocation.replace(/^Raum\s+/i, '');
+                } else if (initialLocationType === 'custom') {
+                    initialCustomLocation = rawLocation;
+                }
+
                 setFormData({
                     displayName: currentUserData.displayName || '',
                     email: currentUserData.email || '',
                     position: currentUserData.position || '',
-                    location: currentUserData.location || '',
+                    locationType: initialLocationType,
+                    roomNumber: initialRoomNumber,
+                    customLocation: initialCustomLocation,
                     showEmail: currentUserData.showEmail !== false,
                     profileImage: currentUserData.profileImage || '',
                     departmentId: currentDeptId,
@@ -108,8 +129,25 @@ const Profile = () => {
         e.preventDefault();
         setSaving(true);
 
+        let finalLocation = '';
+        if (formData.locationType === 'room') {
+            const num = (formData.roomNumber || '').trim();
+            finalLocation = num ? (num.toLowerCase().startsWith('raum ') ? num : `Raum ${num}`) : '';
+        } else if (formData.locationType === 'custom') {
+            finalLocation = (formData.customLocation || '').trim();
+        } else if (formData.locationType === 'secretariat') {
+            finalLocation = 'Treffpunkt Sekretariat';
+        } else {
+            finalLocation = '';
+        }
+
         try {
-            const res = await api.put('/auth/profile', formData);
+            const payload = {
+                ...formData,
+                location: finalLocation,
+                locationType: formData.locationType
+            };
+            const res = await api.put('/auth/profile', payload);
             if (res.data.success) {
                 setUser(res.data.user);
                 toast.success("Profil erfolgreich aktualisiert.");
@@ -123,9 +161,7 @@ const Profile = () => {
     };
 
     if (loading) {
-        const isExternalAuth = user?.authMethod === 'sso' || user?.authMethod === 'ldap' || user?.isSso;
-
-    return (
+        return (
             <div className="flex justify-center items-center p-12">
                 <Loader2 className="animate-spin text-primary h-8 w-8" />
             </div>
@@ -204,32 +240,102 @@ const Profile = () => {
                             </div>
                         </div>
 
-                        {/* Position and Location */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="position">Position / Funktion</Label>
-                                <Input
-                                    id="position"
-                                    name="position"
-                                    value={formData.position}
-                                    onChange={handleInputChange}
-                                    placeholder="z.B. Klassenlehrer, IT-Admin"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="location">Ort / Raum</Label>
-                                <Input
-                                    id="location"
-                                    name="location"
-                                    value={formData.location}
-                                    onChange={handleInputChange}
-                                    placeholder="z.B. Raum A104"
-                                />
+                        {/* Position */}
+                        <div className="space-y-2">
+                            <Label htmlFor="position">Position / Funktion</Label>
+                            <Input
+                                id="position"
+                                name="position"
+                                value={formData.position}
+                                onChange={handleInputChange}
+                                placeholder="z.B. Klassenlehrer, IT-Admin"
+                            />
+                        </div>
+
+                        {/* Location Radio Selection */}
+                        <div className="space-y-3 pt-2 border-t">
+                            <Label className="text-base font-medium">Ort</Label>
+                            <div className="grid grid-cols-1 gap-2.5">
+                                <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${formData.locationType === 'none' ? 'border-primary bg-primary/5 font-medium' : 'hover:bg-muted/30'}`}>
+                                    <input
+                                        type="radio"
+                                        name="locationType"
+                                        value="none"
+                                        checked={formData.locationType === 'none'}
+                                        onChange={handleInputChange}
+                                        className="h-4 w-4 text-primary"
+                                    />
+                                    <span className="text-sm">Keine Angabe (Standard)</span>
+                                </label>
+
+                                <div className={`p-3 rounded-lg border transition-colors ${formData.locationType === 'room' ? 'border-primary bg-primary/5' : 'hover:bg-muted/30'}`}>
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="locationType"
+                                            value="room"
+                                            checked={formData.locationType === 'room'}
+                                            onChange={handleInputChange}
+                                            className="h-4 w-4 text-primary"
+                                        />
+                                        <span className={`text-sm ${formData.locationType === 'room' ? 'font-medium' : ''}`}>Raum</span>
+                                    </label>
+                                    {formData.locationType === 'room' && (
+                                        <div className="mt-2.5 pl-7">
+                                            <Input
+                                                name="roomNumber"
+                                                value={formData.roomNumber}
+                                                onChange={handleInputChange}
+                                                placeholder="Raumnummer eingeben (z.B. A104)"
+                                                required
+                                                className="bg-background"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className={`p-3 rounded-lg border transition-colors ${formData.locationType === 'custom' ? 'border-primary bg-primary/5' : 'hover:bg-muted/30'}`}>
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="locationType"
+                                            value="custom"
+                                            checked={formData.locationType === 'custom'}
+                                            onChange={handleInputChange}
+                                            className="h-4 w-4 text-primary"
+                                        />
+                                        <span className={`text-sm ${formData.locationType === 'custom' ? 'font-medium' : ''}`}>Eigene Angabe</span>
+                                    </label>
+                                    {formData.locationType === 'custom' && (
+                                        <div className="mt-2.5 pl-7">
+                                            <Input
+                                                name="customLocation"
+                                                value={formData.customLocation}
+                                                onChange={handleInputChange}
+                                                placeholder="Eigene Ortsangabe eingeben..."
+                                                required
+                                                className="bg-background"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${formData.locationType === 'secretariat' ? 'border-primary bg-primary/5 font-medium' : 'hover:bg-muted/30'}`}>
+                                    <input
+                                        type="radio"
+                                        name="locationType"
+                                        value="secretariat"
+                                        checked={formData.locationType === 'secretariat'}
+                                        onChange={handleInputChange}
+                                        className="h-4 w-4 text-primary"
+                                    />
+                                    <span className="text-sm">Treffpunkt Sekretariat</span>
+                                </label>
                             </div>
                         </div>
 
                         {/* Department selection */}
-                        <div className="space-y-2">
+                        <div className="space-y-2 pt-2 border-t">
                             <Label htmlFor="departmentId">Abteilung</Label>
                             <select
                                 id="departmentId"

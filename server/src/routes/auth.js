@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_change_me';
 
 const getFullUserData = async (userId) => {
     const user = await User.findByPk(userId, {
-        attributes: ['id', 'username', 'displayName', 'isAdmin', 'authMethod', 'email', 'position', 'location', 'profileImage', 'showEmail', 'bookingPageActive'],
+        attributes: ['id', 'username', 'displayName', 'isAdmin', 'authMethod', 'email', 'position', 'location', 'locationType', 'profileImage', 'showEmail', 'bookingPageActive'],
         include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
     });
     return user ? user.toJSON() : null;
@@ -284,7 +284,7 @@ router.put('/profile', async (req, res) => {
         const user = await User.findByPk(decoded.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        const { displayName, position, location, profileImage, showEmail, departmentId, bookingPageActive } = req.body;
+        const { displayName, position, location, locationType, profileImage, showEmail, departmentId, bookingPageActive } = req.body;
 
         // Update basic info
         // Update basic info (displayName is only editable for local users, not SSO/LDAP)
@@ -293,6 +293,7 @@ router.put('/profile', async (req, res) => {
         }
         user.position = position !== undefined ? position : user.position;
         user.location = location !== undefined ? location : user.location;
+        if (locationType !== undefined) user.locationType = locationType;
         if (profileImage !== undefined) user.profileImage = profileImage;
         if (showEmail !== undefined) user.showEmail = showEmail;
         if (bookingPageActive !== undefined) user.bookingPageActive = bookingPageActive;

@@ -86,6 +86,20 @@ sequelize.sync().then(async () => {
         // Safe to ignore if column already exists
     }
 
+    try {
+        await sequelize.query("ALTER TABLE Users ADD COLUMN locationType VARCHAR(255) DEFAULT NULL");
+        console.log('Database upgrade: Added locationType column to Users table');
+    } catch (dbErr) {
+        // Safe to ignore if column already exists
+    }
+
+    try {
+        await sequelize.query("UPDATE Users SET locationType = 'none' WHERE locationType IS NULL AND (location IS NULL OR TRIM(location) = '')");
+        await sequelize.query("UPDATE Users SET locationType = 'custom' WHERE locationType IS NULL AND location IS NOT NULL AND TRIM(location) != ''");
+    } catch (dbErr) {
+        console.error('Database migration error for locationType:', dbErr);
+    }
+
     // Start Jobs
     const startReminderJob = require('./jobs/reminders');
     startReminderJob();

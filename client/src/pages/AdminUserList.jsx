@@ -375,7 +375,16 @@ const AdminUserList = () => {
                                                     <Button variant="ghost" size="icon" onClick={() => openEditModal(u)}>
                                                         <Edit2 className="h-4 w-4" />
                                                     </Button>
-                                                    {u.authMethod === 'local' && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                        onClick={() => handleDelete(u.id)}
+                                                        title="Benutzer löschen"
+                                                    >
+                                                        <Trash className="h-4 w-4" />
+                                                    </Button>
+                                                    {false && (
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"

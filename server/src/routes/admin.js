@@ -11,7 +11,7 @@ router.use(requireAdmin);
 router.get('/users', async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'username', 'displayName', 'email', 'isAdmin', 'authMethod', 'position', 'location', 'profileImage', 'showEmail', 'bookingPageActive'],
+            attributes: ['id', 'username', 'displayName', 'email', 'isAdmin', 'authMethod', 'position', 'location', 'locationType', 'profileImage', 'showEmail', 'bookingPageActive'],
             include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
         });
         res.json(users);
@@ -70,6 +70,11 @@ router.put('/users/:id', async (req, res) => {
         // New Profile Fields
         user.position = req.body.position; // Allow empty string to clear
         user.location = req.body.location;
+        if (req.body.locationType !== undefined) {
+            user.locationType = req.body.locationType;
+        } else if (req.body.location !== undefined) {
+            user.locationType = req.body.location && req.body.location.trim() !== '' ? 'custom' : 'none';
+        }
         if (req.body.profileImage !== undefined) user.profileImage = req.body.profileImage;
         if (req.body.showEmail !== undefined) user.showEmail = req.body.showEmail;
 
@@ -121,6 +126,12 @@ router.delete('/users/:id', async (req, res) => {
         // Optional: Prevent deleting self
         // if (req.user.id === parseInt(id)) return res.status(400).json({ error: 'Cannot delete yourself' });
 
+        const { Booking, TimeOff } = require('../models');
+        await user.setDepartments([]);
+        await Booking.destroy({ where: { providerId: user.id } });
+        await Availability.destroy({ where: { userId: user.id } });
+        await Topic.destroy({ where: { userId: user.id } });
+        await TimeOff.destroy({ where: { userId: user.id } });
         await user.destroy();
         res.json({ success: true, message: 'User deleted' });
     } catch (err) {

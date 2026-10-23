@@ -40,6 +40,10 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true,
     },
+    locationType: {
+        type: DataTypes.STRING,
+        defaultValue: 'none',
+    },
     isAdmin: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,

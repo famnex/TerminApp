@@ -86,7 +86,7 @@ const mailService = {
 
             const topicTitle = fullBooking?.Topic?.title || 'Termin';
             const expertName = fullBooking?.Provider?.displayName || 'Experte';
-            const location = fullBooking?.Provider?.location || 'Online / Vor Ort';
+            const location = fullBooking?.Provider?.location || 'Keine Angabe';
             const expertEmail = fullBooking?.Provider?.email;
 
             const recipients = [booking.customerEmail];
@@ -333,7 +333,7 @@ Link funktioniert nicht? Kopieren Sie folgende Adresse in Ihren Browser:<br>
 
             const topicTitle = fullBooking?.Topic?.title || 'Termin';
             const expertName = fullBooking?.Provider?.displayName || 'Experte';
-            const location = fullBooking?.Provider?.location || 'Online / Vor Ort';
+            const location = fullBooking?.Provider?.location || 'Keine Angabe';
             const expertEmail = fullBooking?.Provider?.email;
 
             const recipients = [booking.customerEmail];
@@ -431,7 +431,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
             fullBookings.forEach(booking => {
                 const topicTitle = booking?.Topic?.title || 'Termin';
                 const expertName = booking?.Provider?.displayName || 'Experte';
-                const location = booking?.Provider?.location || 'Online / Vor Ort';
+                const location = booking?.Provider?.location || 'Keine Angabe';
                 const formattedDate = formatGermanDate(booking.slotStartTime);
                 const cancelUrl = `${appUrl}/#/cancel/${booking.cancellationToken}`;
 
