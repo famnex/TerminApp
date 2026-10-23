@@ -7,8 +7,16 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
-import { ChevronLeft, Camera, Loader2, Save } from "lucide-react";
+import { ChevronLeft, Camera, Loader2, Save, X } from "lucide-react";
 import { toast } from "sonner";
+
+const parsePositionItems = (posStr) => {
+    if (!posStr) return [];
+    return posStr
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+};
 
 const Profile = () => {
     const { user, setUser } = useAuth();
@@ -26,6 +34,9 @@ const Profile = () => {
         departmentId: '',
         bookingPageActive: false
     });
+
+    const [positionItems, setPositionItems] = useState([]);
+    const [positionInput, setPositionInput] = useState('');
 
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -66,10 +77,14 @@ const Profile = () => {
                     initialCustomLocation = rawLocation;
                 }
 
+                const initialPositions = parsePositionItems(currentUserData.position || '');
+                setPositionItems(initialPositions);
+                setPositionInput('');
+
                 setFormData({
                     displayName: currentUserData.displayName || '',
                     email: currentUserData.email || '',
-                    position: currentUserData.position || '',
+                    position: initialPositions.join(', '),
                     locationType: initialLocationType,
                     roomNumber: initialRoomNumber,
                     customLocation: initialCustomLocation,
@@ -96,6 +111,30 @@ const Profile = () => {
 
     const handleSwitchChange = (name, checked) => {
         setFormData(prev => ({ ...prev, [name]: checked }));
+    };
+
+    const handlePositionKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const raw = positionInput.trim();
+            if (!raw) return;
+
+            const newParts = raw.split(',').map(s => s.trim()).filter(Boolean);
+            setPositionItems(prev => {
+                const updated = [...prev];
+                newParts.forEach(part => {
+                    if (!updated.includes(part)) {
+                        updated.push(part);
+                    }
+                });
+                return updated;
+            });
+            setPositionInput('');
+        }
+    };
+
+    const handleRemovePosition = (indexToRemove) => {
+        setPositionItems(prev => prev.filter((_, idx) => idx !== indexToRemove));
     };
 
     const handleImageUpload = async (e) => {
@@ -129,6 +168,20 @@ const Profile = () => {
         e.preventDefault();
         setSaving(true);
 
+        // If user still has un-confirmed text in positionInput when clicking Save, include it
+        let finalPositionItems = [...positionItems];
+        if (positionInput.trim()) {
+            const extraParts = positionInput.trim().split(',').map(s => s.trim()).filter(Boolean);
+            extraParts.forEach(part => {
+                if (!finalPositionItems.includes(part)) {
+                    finalPositionItems.push(part);
+                }
+            });
+            setPositionItems(finalPositionItems);
+            setPositionInput('');
+        }
+        const finalPositionString = finalPositionItems.join(', ');
+
         let finalLocation = '';
         if (formData.locationType === 'room') {
             const num = (formData.roomNumber || '').trim();
@@ -144,6 +197,7 @@ const Profile = () => {
         try {
             const payload = {
                 ...formData,
+                position: finalPositionString,
                 location: finalLocation,
                 locationType: formData.locationType
             };
@@ -240,16 +294,39 @@ const Profile = () => {
                             </div>
                         </div>
 
-                        {/* Position */}
+                        {/* Position (Multi-item via Enter) */}
                         <div className="space-y-2">
-                            <Label htmlFor="position">Position / Funktion</Label>
+                            <Label htmlFor="positionInput">Position / Funktion</Label>
+                            {positionItems.length > 0 && (
+                                <div className="flex flex-wrap gap-2 pb-1">
+                                    {positionItems.map((pos, idx) => (
+                                        <span
+                                            key={idx}
+                                            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full"
+                                        >
+                                            <span>{pos}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemovePosition(idx)}
+                                                className="text-primary/70 hover:text-primary focus:outline-none rounded-full p-0.5 hover:bg-primary/15 transition-colors"
+                                                title="Entfernen"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
                             <Input
-                                id="position"
-                                name="position"
-                                value={formData.position}
-                                onChange={handleInputChange}
-                                placeholder="z.B. Klassenlehrer, IT-Admin"
+                                id="positionInput"
+                                value={positionInput}
+                                onChange={(e) => setPositionInput(e.target.value)}
+                                onKeyDown={handlePositionKeyDown}
+                                placeholder="Position eingeben und mit Enter hinzufügen (z.B. Klassenlehrer)"
                             />
+                            <p className="text-xs text-muted-foreground">
+                                Drücke <strong>Enter</strong>, um eine Position als eigenes Element hinzuzufügen. Mehrere Einträge sind möglich.
+                            </p>
                         </div>
 
                         {/* Location Radio Selection */}

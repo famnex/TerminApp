@@ -87,6 +87,21 @@ router.get('/settings', async (req, res) => {
     }
 });
 
+// GET /api/public/users/:id - Single Expert Public Info
+router.get('/users/:id', async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id, {
+            attributes: ['id', 'displayName', 'position', 'profileImage', 'bookingPageActive']
+        });
+        if (!user || !user.bookingPageActive) {
+            return res.status(403).json({ error: 'Diese Buchungsseite ist derzeit deaktiviert.' });
+        }
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // GET /api/public/users/:id/topics
 router.get('/users/:id/topics', async (req, res) => {
     try {

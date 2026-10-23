@@ -337,7 +337,9 @@ const AdminUserList = () => {
                                                         <span>{u.displayName}</span>
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-xs text-muted-foreground font-mono">@{u.username}</span>
-                                                            {u.position && <span className="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{u.position}</span>}
+                                                            {u.position && u.position.split(',').map(s => s.trim()).filter(Boolean).map((pos, idx) => (
+                                                                <span key={idx} className="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{pos}</span>
+                                                            ))}
                                                         </div>
                                                     </div>
                                                 </div>

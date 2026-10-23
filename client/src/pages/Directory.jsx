@@ -68,9 +68,6 @@ const Directory = () => {
 
         return matchesSearch && matchesDept;
     }).sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'de', { sensitivity: 'base' }));
-    // Sorted alphabetically by displayName
-    const _unused = (() => {
-    });
 
     if (loading) return <div className="flex justify-center items-center h-[50vh]"><Loader2 className="animate-spin text-primary" size={32} /></div>;
 
@@ -115,6 +112,9 @@ const Directory = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredUsers.map(user => {
                     const hasAvailability = user.hasAvailability;
+                    const positionItems = user.position
+                        ? user.position.split(',').map(s => s.trim()).filter(Boolean)
+                        : [];
 
                     return (
                         <div key={user.id} className={`rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col items-center text-center transition-all group ${hasAvailability ? 'hover:shadow-md hover:border-primary/50' : 'opacity-70 bg-muted/30'}`}>
@@ -130,22 +130,28 @@ const Directory = () => {
 
                             <h3 className="font-semibold text-xl mb-1">{user.displayName}</h3>
 
-                            {/* Position */}
-                            {user.position && (
-                                <div className="text-sm font-medium text-primary mb-2 bg-primary/5 px-2 py-0.5 rounded-full">
-                                    {user.position}
+                            {/* Position Bubbles */}
+                            {positionItems.length > 0 && (
+                                <div className="flex flex-wrap justify-center gap-1.5 mb-2">
+                                    {positionItems.map((pos, idx) => (
+                                        <span
+                                            key={idx}
+                                            className="text-sm font-medium text-primary bg-primary/5 px-2.5 py-0.5 rounded-full"
+                                        >
+                                            {pos}
+                                        </span>
+                                    ))}
                                 </div>
                             )}
 
                             {/* Departments (Optional to show) */}
-                            <div className="flex flex-wrap justify-center gap-1 mb-4 h-6">
+                            <div className="flex flex-wrap justify-center gap-1 mb-4 min-h-[1.5rem]">
                                 {user.Departments && user.Departments.map(d => (
                                     <span key={d.id} className="text-[10px] uppercase tracking-wider text-muted-foreground border px-1 rounded flex items-center gap-1">
                                         <Building2 size={10} /> {d.name}
                                     </span>
                                 ))}
                             </div>
-
 
                             {/* Email (Conditional) */}
                             {user.showEmail ? (

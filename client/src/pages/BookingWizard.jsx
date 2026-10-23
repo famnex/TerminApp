@@ -18,6 +18,7 @@ const BookingWizard = () => {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [topics, setTopics] = useState([]);
+    const [expert, setExpert] = useState(null);
 
     // Data
     const [selectedTopic, setSelectedTopic] = useState(null);
@@ -35,11 +36,15 @@ const BookingWizard = () => {
     // Calendar State
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
-    // Step 1: Fetch Topics
+    // Step 1: Fetch Expert Info & Topics
     useEffect(() => {
-        api.get(`/public/users/${userId}/topics`)
-            .then(res => {
-                const fetchedTopics = res.data;
+        Promise.all([
+            api.get(`/public/users/${userId}`),
+            api.get(`/public/users/${userId}/topics`)
+        ])
+            .then(([userRes, topicsRes]) => {
+                setExpert(userRes.data);
+                const fetchedTopics = topicsRes.data;
                 setTopics(fetchedTopics);
 
                 // Auto-select topic if passed via HashRouter URL parameter ?topic=ID or ?topicId=ID
@@ -168,8 +173,6 @@ const BookingWizard = () => {
         const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
         // Calculate offset for Monday start (Monday=0 ... Sunday=6)
-        // new Date(y, m, 1).getDay() returns 0 for Sunday, 1 for Monday...
-        // We shift it so 1(Mon) -> 0, 0(Sun) -> 6
         const startDayIndex = (monthStart.getDay() + 6) % 7;
 
         // Create empty slots for the days before the 1st of the month
@@ -246,9 +249,41 @@ const BookingWizard = () => {
         );
     }
 
+    const expertPositionItems = expert?.position
+        ? expert.position.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+
     return (
         <div className="min-h-screen bg-slate-50/50 py-12 px-4 font-sans text-slate-900">
             <div className="max-w-xl mx-auto">
+
+                {/* Expert Info above "Termin buchen" and Share button */}
+                {expert && (
+                    <div className="flex flex-col items-center text-center mb-6 pb-6 border-b border-border/60">
+                        {expert.profileImage && (
+                            <div className="w-20 h-20 mb-3 rounded-full overflow-hidden border-2 border-primary/20 shadow-sm bg-muted">
+                                <img
+                                    src={expert.profileImage}
+                                    alt={expert.displayName}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        )}
+                        <h2 className="text-xl font-bold text-foreground">{expert.displayName}</h2>
+                        {expertPositionItems.length > 0 && (
+                            <div className="flex flex-wrap justify-center gap-1.5 mt-2">
+                                {expertPositionItems.map((pos, idx) => (
+                                    <span
+                                        key={idx}
+                                        className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-0.5 rounded-full"
+                                    >
+                                        {pos}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Header */}
                 <div className="text-center mb-8 space-y-2 relative">
