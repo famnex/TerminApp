@@ -123,12 +123,16 @@ const Profile = () => {
     };
 
     if (loading) {
-        return (
+        const isExternalAuth = user?.authMethod === 'sso' || user?.authMethod === 'ldap' || user?.isSso;
+
+    return (
             <div className="flex justify-center items-center p-12">
                 <Loader2 className="animate-spin text-primary h-8 w-8" />
             </div>
         );
     }
+
+    const isExternalAuth = user?.authMethod === 'sso' || user?.authMethod === 'ldap' || user?.isSso;
 
     return (
         <div className="max-w-2xl mx-auto space-y-6 animate-fade-in-up pb-20">
@@ -174,13 +178,15 @@ const Profile = () => {
                         {/* Name and Email */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="displayName">Anzeigename</Label>
+                                <Label htmlFor="displayName">Anzeigename {isExternalAuth && "(Nicht änderbar)"}</Label>
                                 <Input
                                     id="displayName"
                                     name="displayName"
                                     required
+                                    disabled={isExternalAuth}
                                     value={formData.displayName}
                                     onChange={handleInputChange}
+                                    className={isExternalAuth ? "bg-muted" : ""}
                                     placeholder="z.B. Dr. Max Mustermann"
                                 />
                             </div>

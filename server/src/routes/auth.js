@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_change_me';
 
 const getFullUserData = async (userId) => {
     const user = await User.findByPk(userId, {
-        attributes: ['id', 'username', 'displayName', 'isAdmin', 'email', 'position', 'location', 'profileImage', 'showEmail', 'bookingPageActive'],
+        attributes: ['id', 'username', 'displayName', 'isAdmin', 'authMethod', 'email', 'position', 'location', 'profileImage', 'showEmail', 'bookingPageActive'],
         include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
     });
     return user ? user.toJSON() : null;
@@ -57,8 +57,15 @@ router.post('/login', async (req, res) => {
                         isAdmin: false // Default to standard user
                     });
                 } else {
-                    // Update existing user with latest info from LDAP, but do NOT overwrite displayName
+                    // Update existing user with latest info from LDAP including displayName
                     let needsSave = false;
+
+                    const ldapDisplayName = ldapUser.displayName || ldapUser.cn;
+                    if (ldapDisplayName && user.displayName !== ldapDisplayName) {
+                        user.displayName = ldapDisplayName;
+                        needsSave = true;
+                    }
+
                     if (user.authMethod !== 'ldap') {
                         user.authMethod = 'ldap';
                         needsSave = true;
@@ -150,7 +157,8 @@ router.post('/sso', async (req, res) => {
             return res.status(400).json({ error: 'SSO-Token enthält keinen gültigen Benutzernamen (username/sub)' });
         }
 
-        let displayName = decoded.displayName || 
+        let displayName = decoded.display_name || 
+                          decoded.displayName || 
                           decoded.name || 
                           decoded.cn || 
                           (decoded.given_name && decoded.family_name ? `${decoded.given_name} ${decoded.family_name}` : null) || 
@@ -219,8 +227,14 @@ router.post('/sso', async (req, res) => {
                 isAdmin: isAdmin
             });
         } else {
-            // Update existing user attributes if they changed, but do NOT overwrite displayName
+            // Update existing user attributes on every login, including overwriting displayName from token claim
             let needsSave = false;
+
+            if (displayName && user.displayName !== displayName) {
+                user.displayName = displayName;
+                needsSave = true;
+            }
+
             if (user.authMethod !== 'sso') {
                 user.authMethod = 'sso';
                 needsSave = true;
@@ -229,7 +243,7 @@ router.post('/sso', async (req, res) => {
                 user.email = email;
                 needsSave = true;
             }
-            if (decoded.isAdmin !== undefined && user.isAdmin !== isAdmin) {
+            if ((decoded.isAdmin !== undefined || decoded.admin !== undefined || decoded.role !== undefined) && user.isAdmin !== isAdmin) {
                 user.isAdmin = isAdmin;
                 needsSave = true;
             }
@@ -273,7 +287,10 @@ router.put('/profile', async (req, res) => {
         const { displayName, position, location, profileImage, showEmail, departmentId, bookingPageActive } = req.body;
 
         // Update basic info
-        user.displayName = displayName || user.displayName;
+        // Update basic info (displayName is only editable for local users, not SSO/LDAP)
+        if (user.authMethod === 'local' && !decoded.isSso && displayName) {
+            user.displayName = displayName;
+        }
         user.position = position !== undefined ? position : user.position;
         user.location = location !== undefined ? location : user.location;
         if (profileImage !== undefined) user.profileImage = profileImage;

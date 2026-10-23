@@ -60,7 +60,9 @@ router.put('/users/:id', async (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         // Update fields
-        user.displayName = displayName || user.displayName;
+        if (user.authMethod === 'local' && displayName) {
+            user.displayName = displayName;
+        }
         user.email = email || user.email;
         if (isAdmin !== undefined) user.isAdmin = isAdmin;
         if (bookingPageActive !== undefined) user.bookingPageActive = bookingPageActive;

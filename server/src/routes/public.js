@@ -55,6 +55,7 @@ router.get('/users', async (req, res) => {
             return u;
         });
 
+        enhancedUsers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'de', { sensitivity: 'base' }));
         res.json(enhancedUsers);
     } catch (err) {
         res.status(500).json({ error: err.message });

@@ -267,7 +267,7 @@ const AdminUserList = () => {
 
     if (loading && !users.length) return <div className="flex justify-center p-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
 
-    const isLdap = formData.authMethod === 'ldap';
+    const isLdap = formData.authMethod === 'ldap' || formData.authMethod === 'sso';
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-fade-in-up pb-20">
@@ -623,9 +623,11 @@ const AdminUserList = () => {
 
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label>Anzeigename</Label>
+                                        <Label>Anzeigename {isLdap && <span className="text-xs text-muted-foreground">(Gesperrt durch {formData.authMethod?.toUpperCase()})</span>}</Label>
                                         <Input
                                             name="displayName"
+                                            disabled={isLdap}
+                                            className={isLdap ? "bg-muted" : ""}
                                             required
                                             value={formData.displayName}
                                             onChange={handleInputChange}
@@ -633,7 +635,7 @@ const AdminUserList = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Email {isLdap && <span className="text-xs text-muted-foreground">(Gesperrt durch LDAP)</span>}</Label>
+                                        <Label>Email {isLdap && <span className="text-xs text-muted-foreground">(Gesperrt durch {formData.authMethod?.toUpperCase()})</span>}</Label>
                                         <Input
                                             type="email"
                                             name="email"

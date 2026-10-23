@@ -67,6 +67,9 @@ const Directory = () => {
             (user.Departments && user.Departments.some(d => d.id.toString() === selectedDeptId));
 
         return matchesSearch && matchesDept;
+    }).sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'de', { sensitivity: 'base' }));
+    // Sorted alphabetically by displayName
+    const _unused = (() => {
     });
 
     if (loading) return <div className="flex justify-center items-center h-[50vh]"><Loader2 className="animate-spin text-primary" size={32} /></div>;
