@@ -322,11 +322,16 @@ const Profile = () => {
                                 value={positionInput}
                                 onChange={(e) => setPositionInput(e.target.value)}
                                 onKeyDown={handlePositionKeyDown}
-                                placeholder="Position eingeben und mit Enter hinzufügen (z.B. Klassenlehrer)"
+                                placeholder="Position eingeben und mit Enter hinzufügen (z.B. Tutor 12BG, Abteilungsleitung)"
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Drücke <strong>Enter</strong>, um eine Position als eigenes Element hinzuzufügen. Mehrere Einträge sind möglich.
-                            </p>
+                            <div className="text-xs text-muted-foreground space-y-1">
+                                <p>
+                                    Drücke <strong>Enter</strong>, um eine Position als eigenes Element hinzuzufügen. Mehrere Einträge sind möglich.
+                                </p>
+                                <p className="p-2.5 rounded-md bg-amber-50/80 border border-amber-200/80 text-amber-900">
+                                    <strong>Hinweis:</strong> Bitte trage hier besondere Funktionen wie z.&nbsp;B. <em>Tutorenschaft, Klassenleitung, Beratungsfunktionen oder Leitungspositionen</em> ein – <strong>nicht</strong> deine Fächerkombinationen oder die allgemeine Schulform/Abteilung (wie Berufsschulabteilung oder gymnasiale Abteilung).
+                                </p>
+                            </div>
                         </div>
 
                         {/* Location Radio Selection */}

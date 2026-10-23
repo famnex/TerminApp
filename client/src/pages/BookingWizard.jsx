@@ -36,6 +36,11 @@ const BookingWizard = () => {
     // Calendar State
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
+    // Scroll to top when opening booking page or changing steps
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [userId, step]);
+
     // Step 1: Fetch Expert Info & Topics
     useEffect(() => {
         Promise.all([

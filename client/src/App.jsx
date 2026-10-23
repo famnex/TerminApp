@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Directory from './pages/Directory';
 import BookingWizard from './pages/BookingWizard';
 import AdminLogin from './pages/AdminLogin';
@@ -23,6 +23,15 @@ import { Toaster } from './components/ui/sonner';
 import './index.css';
 
 import { Menu, X } from 'lucide-react';
+
+// Automatically scroll to top on route changes
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
 
 // Navigation Items Component that adapts to auth state
 const NavItems = ({ onClick, className = "flex items-center gap-6" }) => {
@@ -145,6 +154,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <ScrollToTop />
         <div className="min-h-screen bg-background font-sans antialiased text-foreground flex flex-col">
           <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
             <div className="container flex h-16 items-center justify-between">
