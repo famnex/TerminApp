@@ -95,6 +95,18 @@ Die TerminApp unterstützt die Benutzerauthentifizierung gegen ein Active Direct
 *   **Erfüllt (Lehrer/Anbieter):** Der Benutzer wird als regulärer Provider eingeloggt und kann ins Dashboard wechseln.
 *   **Nicht erfüllt (Schüler/Gäste):** Der Benutzer wird **nicht** im Backend eingeloggt. Es wird jedoch keine Fehlermeldung angezeigt. Der Benutzer verbleibt auf der öffentlichen Übersichtsseite. Name und E-Mail-Adresse aus dem JWT-Token werden im Browser zwischengespeichert und **beim Ausfüllen des Buchungsformulars automatisch vorausgefüllt**.
 
+### Ein Konto für LDAP und SSO (Kontenzusammenführung)
+*   LDAP und SSO werden aus demselben Datenstamm gespeist. Die **E-Mail-Adresse** ist daher das eindeutige Merkmal einer Person (Groß-/Kleinschreibung und Leerzeichen werden ignoriert).
+*   **Bei jedem Login** (LDAP oder SSO) sucht die App das Konto zuerst über die E-Mail-Adresse und erst danach über den Benutzernamen. So landet ein Benutzer immer im selben Konto, egal über welchen Weg er sich anmeldet.
+*   Bei LDAP wird für neue Konten der `sAMAccountName` als Benutzername verwendet (statt der eingetippten Schreibweise), damit LDAP- und SSO-Benutzernamen übereinstimmen.
+*   Werden beim Login mehrere LDAP/SSO-Konten mit derselben E-Mail-Adresse gefunden, werden sie **automatisch zusammengeführt**.
+*   **Admin → Benutzerverwaltung:** Existieren doppelte Konten, erscheint oben ein Hinweis mit allen betroffenen Personen und dem Button **„Alle zusammenführen“**. Vorher wird automatisch eine Sicherung `server/database.before-merge-<Zeitstempel>.sqlite` angelegt.
+*   **Regeln beim Zusammenführen** (`server/src/services/userMerge.js`):
+    *   Hauptkonto = Konto mit den meisten Daten (Termine, eigene Themen, Verfügbarkeiten, Abwesenheiten); bei Gleichstand das älteste Konto.
+    *   Termine, Themen, Verfügbarkeiten, Abwesenheiten und Abteilungen der anderen Konten werden übernommen. Doppelte Einträge aus derselben Sammelverarbeitungsregel werden zusammengelegt (Termine werden dabei auf das verbleibende Thema umgehängt).
+    *   Leere Profilfelder (Position, Bild, Ort) werden aus den anderen Konten ergänzt; „Buchungsseite aktiv“ und Admin-Rechte bleiben erhalten, wenn eines der Konten sie hatte.
+    *   Lokale Konten (mit eigenem Passwort) werden nicht automatisch zusammengeführt.
+
 ---
 
 ## 5. SMTP & E-Mail-Automatisierung

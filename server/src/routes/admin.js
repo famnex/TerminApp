@@ -139,6 +139,30 @@ router.delete('/users/:id', async (req, res) => {
     }
 });
 
+// GET /api/admin/users-duplicates - Find duplicate LDAP/SSO accounts (same email)
+router.get('/users-duplicates', async (req, res) => {
+    try {
+        const { findDuplicateGroups } = require('../services/userMerge');
+        const groups = await findDuplicateGroups();
+        res.json(groups);
+    } catch (err) {
+        console.error('Duplicate detection error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/admin/users-duplicates/merge - Merge all duplicate LDAP/SSO accounts (same email)
+router.post('/users-duplicates/merge', async (req, res) => {
+    try {
+        const { mergeAllDuplicates } = require('../services/userMerge');
+        const result = await mergeAllDuplicates();
+        res.json({ success: true, ...result });
+    } catch (err) {
+        console.error('Duplicate merge error:', err);
+        res.status(500).json({ error: 'Fehler beim Zusammenführen: ' + err.message });
+    }
+});
+
 // POST /api/admin/ldap-test
 const { testLdapConnection } = require('../utils/ldap');
 router.post('/ldap-test', async (req, res) => {

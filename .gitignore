@@ -29,4 +29,5 @@ yarn-error.log*
 # Database and Uploads
 server/database.sqlite
 server/database.sqlite-journal
+server/database.before-merge-*.sqlite
 server/uploads/

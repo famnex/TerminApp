@@ -20,7 +20,7 @@ import {
     TableRow,
 } from "../components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Building2, Users as UsersIcon, Star } from 'lucide-react';
+import { Building2, Users as UsersIcon, Star, GitMerge, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AdminUserList = () => {
@@ -35,6 +35,8 @@ const AdminUserList = () => {
     const [editingUser, setEditingUser] = useState(null);
     const [editingDept, setEditingDept] = useState(null);
     const [uploadingImage, setUploadingImage] = useState(false);
+    const [duplicateGroups, setDuplicateGroups] = useState([]);
+    const [merging, setMerging] = useState(false);
 
     // Department Form State
     const [deptFormData, setDeptFormData] = useState({
@@ -70,6 +72,13 @@ const AdminUserList = () => {
             ]);
             setUsers(usersRes.data);
             setDepartments(deptsRes.data);
+            try {
+                const dupRes = await api.get('/admin/users-duplicates');
+                setDuplicateGroups(Array.isArray(dupRes.data) ? dupRes.data : []);
+            } catch (dupErr) {
+                console.error("Failed to fetch duplicates", dupErr);
+                setDuplicateGroups([]);
+            }
             setError(null);
         } catch (err) {
             console.error("Failed to fetch data", err);
@@ -227,6 +236,23 @@ const AdminUserList = () => {
         }
     };
 
+    const handleMergeDuplicates = async () => {
+        const accountCount = duplicateGroups.reduce((sum, g) => sum + g.users.length - 1, 0);
+        if (!window.confirm(`Es werden ${duplicateGroups.length} Benutzer zusammengeführt und dabei ${accountCount} doppelte Konten entfernt.\n\nAlle Termine, Themen, Verfügbarkeiten, Abwesenheiten und Abteilungen werden in das jeweils markierte Hauptkonto übernommen. Vorher wird automatisch eine Sicherung der Datenbank angelegt.\n\nFortfahren?`)) {
+            return;
+        }
+        setMerging(true);
+        try {
+            const res = await api.post('/admin/users-duplicates/merge');
+            toast.success(`${res.data.mergedGroups} Benutzer zusammengeführt, ${res.data.removedAccounts} doppelte Konten entfernt.${res.data.backupPath ? ` Sicherung: ${res.data.backupPath}` : ''}`);
+            fetchUsers();
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Fehler beim Zusammenführen.');
+        } finally {
+            setMerging(false);
+        }
+    };
+
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -302,6 +328,52 @@ const AdminUserList = () => {
                 </TabsList>
 
                 <TabsContent value="users">
+                    {duplicateGroups.length > 0 && (
+                        <Card className="mb-6 border-amber-300 bg-amber-50/40">
+                            <CardHeader className="pb-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                        <CardTitle className="text-base flex items-center gap-2 text-amber-900">
+                                            <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                            {duplicateGroups.length} {duplicateGroups.length === 1 ? 'Benutzer hat' : 'Benutzer haben'} doppelte Konten (LDAP / SSO)
+                                        </CardTitle>
+                                        <CardDescription className="text-amber-800/80 mt-1">
+                                            Diese Konten haben dieselbe E-Mail-Adresse und gehören zur selben Person. Beim Zusammenführen werden alle Daten in das markierte Hauptkonto übernommen.
+                                        </CardDescription>
+                                    </div>
+                                    <Button onClick={handleMergeDuplicates} disabled={merging} className="gap-2 shrink-0">
+                                        {merging ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitMerge className="h-4 w-4" />}
+                                        Alle zusammenführen
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {duplicateGroups.map(group => (
+                                    <div key={group.email} className="rounded-md border border-amber-200 bg-background p-3">
+                                        <div className="text-sm font-medium mb-2 flex items-center gap-2">
+                                            <Mail className="h-3.5 w-3.5 text-muted-foreground" /> {group.email}
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {group.users.map(du => (
+                                                <div
+                                                    key={du.id}
+                                                    className={`text-xs rounded-md border px-2.5 py-1.5 ${du.isPrimary ? 'border-green-300 bg-green-50 text-green-900' : 'border-slate-200 bg-slate-50 text-slate-600'}`}
+                                                >
+                                                    <div className="font-medium flex items-center gap-1.5">
+                                                        {du.isPrimary ? 'Hauptkonto' : 'Wird übernommen'} · <span className="font-mono">@{du.username}</span>
+                                                        <span className="uppercase font-mono text-[10px] opacity-70">({du.authMethod})</span>
+                                                    </div>
+                                                    <div className="opacity-80 mt-0.5">
+                                                        {du.bookings} Termine · {du.topics} Themen · {du.availabilities} Verfügbarkeiten · {du.timeOffs} Abwesenheiten
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
                     <Card>
                         <CardHeader>
                             <CardTitle>Alle Benutzer</CardTitle>

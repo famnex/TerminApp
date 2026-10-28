@@ -9,7 +9,7 @@ Diese Datei dokumentiert die Struktur der Datenbank für die TerminApp.
 - `username`: STRING (Unique, Not Null)
 - `password`: STRING (Nullable - for LDAP users)
 - `displayName`: STRING (Not Null)
-- `email`: STRING
+- `email`: STRING (Dient bei externer Authentifizierung via LDAP und SSO als primäres Identitätsmerkmal zur Zuordnung und Zusammenführung von Benutzerkonten)
 - `authMethod`: ENUM('local', 'ldap', 'sso') (Default: 'local')
 - `position`: STRING
 - `profileImage`: STRING

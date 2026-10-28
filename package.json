@@ -1,6 +1,6 @@
 {
     "name": "appointment-app",
-    "version": "1.15.0",
+    "version": "1.16.0",
     "scripts": {
         "server": "cd server && npm run dev",
         "client": "cd client && npm run dev",

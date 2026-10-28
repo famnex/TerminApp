@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const { authenticateLDAP } = require('../utils/ldap');
 const jwt = require('jsonwebtoken');
 const { User, Department } = require('../models');
+const { resolveExternalUser } = require('../services/userMerge');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_change_me';
 
@@ -46,11 +47,17 @@ router.post('/login', async (req, res) => {
 
             if (ldapUser) {
                 console.log(`Login: LDAP Auth Success for '${username}' (DN: ${ldapUser.dn})`);
-                // LDAP Success! Auto-Provision or Sync User
+                // LDAP Success! Resolve the matching account (by email first, then username).
+                // This also merges duplicate LDAP/SSO accounts of the same person automatically.
+                const canonicalUsername = (ldapUser.sAMAccountName || username).toString().trim();
+                user = await resolveExternalUser({ username: canonicalUsername, email: ldapUser.mail });
+                if (!user && canonicalUsername.toLowerCase() !== username.toLowerCase()) {
+                    user = await resolveExternalUser({ username, email: ldapUser.mail });
+                }
                 if (!user) {
-                    console.log(`Auto-Provisioning new LDAP user: ${username}`);
+                    console.log(`Auto-Provisioning new LDAP user: ${canonicalUsername}`);
                     user = await User.create({
-                        username: username,
+                        username: canonicalUsername,
                         displayName: ldapUser.displayName || ldapUser.cn || username,
                         email: ldapUser.mail,
                         authMethod: 'ldap',
@@ -215,8 +222,9 @@ router.post('/sso', async (req, res) => {
             });
         }
 
-        // Find or create user
-        let user = await User.findOne({ where: { username } });
+        // Find or create user (by email first, then username).
+        // This also merges duplicate LDAP/SSO accounts of the same person automatically.
+        let user = await resolveExternalUser({ username, email });
         if (!user) {
             console.log(`Auto-provisioning new SSO user: ${username}`);
             user = await User.create({
