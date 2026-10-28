@@ -325,8 +325,13 @@ const Settings = () => {
                                 {renderToggle('sso_enabled', 'SSO (JWT) aktivieren')}
 
                                 <div className="space-y-4 pt-2 border-t">
-                                    <h3 className="font-semibold text-sm text-foreground">JWT SSO Einstellungen</h3>
+                                    <h3 className="font-semibold text-sm text-foreground">Identity Provider & JWT SSO Einstellungen</h3>
                                     
+                                    {renderField('sso_login_url', 'Identity Provider / SSO Anmelde-URL (z. B. https://portal.schule.de)', 'text', 'https://...')}
+                                    <p className="text-xs text-muted-foreground -mt-2">
+                                        Wenn LDAP deaktiviert ist und keine lokalen Benutzerkonten existieren, führt der Login-Button im Header direkt zu dieser Anmelde-URL (oder als Fallback zur Abmelde-Weiterleitungs-URL).
+                                    </p>
+
                                     {renderField('sso_jwt_secret', 'SSO JWT Secret (Shared Secret für HS256 / RS256 Public Key)', 'password')}
                                     {renderField('sso_jwt_param', 'URL Query Parameter Name (Standard: sso_token)', 'text', 'sso_token')}
                                 </div>

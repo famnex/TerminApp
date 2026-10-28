@@ -37,6 +37,7 @@ const ScrollToTop = () => {
 const NavItems = ({ onClick, className = "flex items-center gap-6" }) => {
   const { user, logout, publicSettings } = useAuth();
   const logoutLabel = publicSettings?.sso_logout_label || 'Abmelden';
+  const directIdpUrl = publicSettings?.directIdpLogin ? publicSettings?.idpLoginUrl : null;
   
   return (
     <div className={className}>
@@ -55,6 +56,14 @@ const NavItems = ({ onClick, className = "flex items-center gap-6" }) => {
             {logoutLabel}
           </button>
         </>
+      ) : directIdpUrl ? (
+        <a 
+          href={directIdpUrl} 
+          onClick={onClick} 
+          className="text-muted-foreground hover:text-primary transition-colors font-medium text-sm"
+        >
+          Login
+        </a>
       ) : (
         <Link to="/admin" onClick={onClick} className="text-muted-foreground hover:text-primary transition-colors font-medium text-sm">
           Login

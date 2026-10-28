@@ -79,7 +79,8 @@ Diese Datei dokumentiert die Struktur der Datenbank für die TerminApp.
   - `sso_enabled`: Gibt an, ob SSO via JWT aktiviert ist (`'true'` oder `'false'`).
   - `sso_jwt_secret`: Das Shared-Secret zur Verifizierung des SSO-JWT-Tokens.
   - `sso_jwt_param`: Der Name des URL-Parameters für den Token (Standard: `'sso_token'`).
-  - `sso_logout_redirect`: URL, zu der SSO-Benutzer nach dem Abmelden weitergeleitet werden.
+  - `sso_login_url`: URL des externen Identity Providers / Anmeldeportals. Wenn LDAP deaktiviert ist und keine lokalen Benutzerkonten existieren, wird der Login-Link direkt hierhin geleitet.
+  - `sso_logout_redirect`: URL, zu der SSO-Benutzer nach dem Abmelden weitergeleitet werden (dient auch als Fallback für die IdP-Anmelde-URL).
   - `sso_logout_label`: Benutzerdefinierter Text für den Abmeldebutton.
 
 ### TimeOffs
@@ -87,7 +88,7 @@ Diese Datei dokumentiert die Struktur der Datenbank für die TerminApp.
 - `startDate`: DATEONLY (Not Null)
 - `endDate`: DATEONLY (Not Null)
 - `reason`: STRING
-- `userId`: INTEGER (Foreign Key -> Users.id)
+- `userId`: INTEGER (Foreign Key -> Users.id, Nullable: Wenn NULL, handelt es sich um eine zentrale Abwesenheit für alle Benutzer, z. B. Schulferien/Schließtage)
 - `createdAt`: DATETIME
 - `updatedAt`: DATETIME
 

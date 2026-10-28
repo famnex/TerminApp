@@ -65,7 +65,9 @@ router.get('/users', async (req, res) => {
 // GET /api/public/settings - Public Config
 router.get('/settings', async (req, res) => {
     try {
-        const { GlobalSettings } = require('../models');
+        const { GlobalSettings, User } = require('../models');
+        const { Op } = require('sequelize');
+
         const settings = await GlobalSettings.findAll({
             where: {
                 key: [
@@ -74,13 +76,45 @@ router.get('/settings', async (req, res) => {
                     'primary_color', 
                     'sso_enabled', 
                     'sso_jwt_param', 
+                    'sso_login_url',
                     'sso_logout_redirect', 
-                    'sso_logout_label'
+                    'sso_logout_label',
+                    'ldap_enabled'
                 ]
             }
         });
 
         const config = settings.reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {});
+
+        // Check if LDAP is enabled
+        const ldapEnabled = config.ldap_enabled === '1' || config.ldap_enabled === 'true' || config.ldap_enabled === true;
+
+        // Check if any local user accounts exist (users with authMethod === 'local' or non-empty local password)
+        const localUserCount = await User.count({
+            where: {
+                [Op.or]: [
+                    { authMethod: 'local' },
+                    {
+                        password: {
+                            [Op.and]: [
+                                { [Op.ne]: null },
+                                { [Op.ne]: '' }
+                            ]
+                        }
+                    }
+                ]
+            }
+        });
+
+        const hasLocalUsers = localUserCount > 0;
+        const idpUrl = (config.sso_login_url || '').trim() || (config.sso_logout_redirect || '').trim() || null;
+        const directIdpLogin = !ldapEnabled && !hasLocalUsers && Boolean(idpUrl);
+
+        config.ldapEnabled = ldapEnabled;
+        config.hasLocalUsers = hasLocalUsers;
+        config.idpLoginUrl = idpUrl;
+        config.directIdpLogin = directIdpLogin;
+
         res.json(config);
     } catch (err) {
         res.status(500).json({ error: err.message });

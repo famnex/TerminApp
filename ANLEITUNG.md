@@ -85,10 +85,15 @@ Die TerminApp unterstützt die Benutzerauthentifizierung gegen ein Active Direct
 
 ### Konfiguration (Dashboard -> Einstellungen -> SSO)
 *   **SSO aktivieren:** Ermöglicht den Login über URL-Parameter.
+*   **Identity Provider / SSO Anmelde-URL:** Link zum Anmeldeportal des Identity Providers. Wenn LDAP deaktiviert ist und keine lokalen Konten existieren, leitet der Login-Link im Header direkt hierhin weiter.
 *   **SSO JWT Secret:** Das gemeinsame Passwort (Shared Secret) zur Entschlüsselung und Prüfung der Signatur.
 *   **URL Parameter Name:** Der Name des Query-Parameters (Standard: `sso_token`).
-*   **Abmelde-Weiterleitungs-URL:** Wenn ausgefüllt, werden SSO-Benutzer nach dem Klick auf Abmelden auf diese externe URL geleitet (z.B. zurück zum Hauptportal).
+*   **Abmelde-Weiterleitungs-URL:** Wenn ausgefüllt, werden SSO-Benutzer nach dem Klick auf Abmelden auf diese externe URL geleitet (z.B. zurück zum Hauptportal). Dient auch als Fallback für die Anmelde-URL, falls dort nichts eingetragen wurde.
 *   **Text für Abmeldebutton:** Ermöglicht die Umbenennung des "Abmelden"-Buttons (z.B. "Zurück zum Portal").
+
+### Direkter Link zum Identity Provider
+*   Wenn in den Einstellungen **LDAP deaktiviert** ist und in der Datenbank **keine lokalen Benutzerkonten** mit eigenem Passwort vorhanden sind, wird der "Login"-Link in der Navigation automatisch als direkter Link zum Identity Provider formatiert.
+*   Wird die Login-Seite (`#/admin`) direkt aufgerufen, erfolgt eine automatische Weiterleitung zum Identity Provider (Notfallzugriff auf das lokale Formular ist weiterhin über `#/admin?local=1` möglich).
 
 ### Gruppenfilter & Formular-Vorausfüllung für Gäste:
 *   Wenn ein Benutzer über SSO reinkommt, prüft die App, ob er den im LDAP-Tab konfigurierten **Gruppen-Filter** erfüllt.
@@ -121,14 +126,24 @@ Die Anwendung versendet automatische Benachrichtigungen bei Buchungen, Stornieru
 
 ---
 
-## 6. Sammelverarbeitung (Batch-Prozesse)
+## 6. Sammelverarbeitung & Zentrale Abwesenheiten
 
-Für Administratoren gibt es unter **Sammelverarbeitung** ein mächtiges Werkzeug, um Regeln für viele Benutzer gleichzeitig zu pflegen.
+Für Administratoren gibt es mächtige Werkzeuge, um Einstellungen und Termine für viele oder alle Benutzer gleichzeitig zu pflegen.
 
-### Anwendungsfälle:
+### Zentrale Abwesenheiten (für alle Benutzer):
+*   Unter **Verfügbarkeit & Abwesenheit -> Abwesenheiten** können Administratoren beim Erstellen einer Abwesenheit die Option **„Zentrale Abwesenheit (Für alle festlegen)“** aktivieren.
+*   **Wirkung:** An den festgelegten Tagen (z. B. Schulferien, Schließtage, Feiertage, pädagogische Tage) können im Buchungssystem bei **keinem** Anbieter Termine gebucht werden.
+*   In der Übersicht sind diese Einträge mit einem Badge *„Zentrale Abwesenheit (Für alle)“* hervorgehoben.
+*   Normale Anbieter sehen diese Tage als organisationsweit blockiert (nicht löschbar), Administratoren können sie jederzeit bearbeiten oder löschen.
+
+### Sammelverarbeitung (Batch-Prozesse):
 *   **Einheitliche Verfügbarkeiten:** Erstelle eine Schicht (z.B. "Elternsprechtag am Freitag von 14:00 - 17:00 Uhr") und weise sie allen Benutzern oder einer kompletten Abteilung (z.B. "Fachbereich Englisch") mit einem Klick zu.
 *   **Standard-Themen:** Weise neuen Benutzern automatisch Standard-Themen zu (z.B. "Sprechstunde, 30 Minuten").
 *   **Automatisches Anwenden:** Aktiviere "Auf zukünftige Benutzer anwenden". Sobald sich ein neuer Benutzer (z.B. via LDAP oder SSO) das erste Mal anmeldet, erhält er diese Themen und Schichten automatisch zugewiesen.
+
+### Benutzerverwaltung (Suche & Sortierung):
+*   Die Benutzerliste ist standardmäßig **alphabetisch nach Anzeigename** sortiert.
+*   Über das integrierte **Suchfeld** kann in Echtzeit nach Name, Benutzername, E-Mail-Adresse, Position/Funktion oder Abteilungszugehörigkeit gefiltert werden.
 
 ---
 

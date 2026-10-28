@@ -7,13 +7,17 @@ const { requireAdmin } = require('../middleware/auth');
 // Note: authenticateToken is already applied in index.js for /api/admin
 router.use(requireAdmin);
 
-// GET All Users (For user management)
+// GET All Users (For user management - sorted alphabetically)
 router.get('/users', async (req, res) => {
     try {
         const users = await User.findAll({
             attributes: ['id', 'username', 'displayName', 'email', 'isAdmin', 'authMethod', 'position', 'location', 'locationType', 'profileImage', 'showEmail', 'bookingPageActive'],
             include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
         });
+        users.sort((a, b) => 
+            (a.displayName || '').localeCompare(b.displayName || '', 'de', { sensitivity: 'base' }) ||
+            (a.username || '').localeCompare(b.username || '', 'de', { sensitivity: 'base' })
+        );
         res.json(users);
     } catch (err) {
         res.status(500).json({ error: err.message });

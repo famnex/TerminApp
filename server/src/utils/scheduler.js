@@ -41,20 +41,19 @@ async function getAvailableSlots(userId, startDateStr, endDateStr, topicId) {
         include: [{ model: Topic, through: { attributes: [] }, attributes: ['id'] }]
     });
 
-    // 2. Fetch Time Offs (Blocked Days)
+    // 2. Fetch Time Offs (Blocked Days: personal and central/global)
     const timeOffs = await TimeOff.findAll({
         where: {
-            userId,
             [Op.or]: [
-                {
-                    startDate: {
-                        [Op.lte]: end
-                    },
-                    endDate: {
-                        [Op.gte]: start
-                    }
-                }
-            ]
+                { userId },
+                { userId: null }
+            ],
+            startDate: {
+                [Op.lte]: end
+            },
+            endDate: {
+                [Op.gte]: start
+            }
         }
     });
 

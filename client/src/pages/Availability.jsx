@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import { Calendar as CalendarIcon, Clock, Plus, Trash2, Edit2, ChevronLeft, Repeat, CalendarDays, AlertCircle, CalendarOff, Palmtree, Tag } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Trash2, Edit2, ChevronLeft, Repeat, CalendarDays, AlertCircle, CalendarOff, Palmtree, Tag, Globe, Lock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
+import { Checkbox } from "../components/ui/checkbox"
+import { useAuth } from '../context/AuthContext';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card"
 import { cn } from "../lib/utils"
@@ -15,6 +17,7 @@ import { toast } from "sonner"
 
 const Availability = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [availabilities, setAvailabilities] = useState([]);
     const [timeOffs, setTimeOffs] = useState([]);
     const [userTopics, setUserTopics] = useState([]);
@@ -109,7 +112,7 @@ const Availability = () => {
             await api.post('/timeoff', newTimeOff);
             setShowModal(false);
             fetchData();
-            toast.success("Abwesenheit erfolgreich gespeichert.");
+            toast.success(newTimeOff.isGlobal ? "Zentrale Abwesenheit für alle erfolgreich gespeichert." : "Abwesenheit erfolgreich gespeichert.");
         } catch (err) {
             toast.error('Fehler beim Speichern: ' + (err.response?.data?.error || err.message));
         }
@@ -420,40 +423,74 @@ const Availability = () => {
                         <p className="text-sm text-muted-foreground">Blockieren Sie Tage für Urlaub, Krankheit oder sonstige Abwesenheiten. Diese Tage sind nicht buchbar.</p>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {timeOffs.map(toff => (
-                                <Card key={toff.id} className="group border-border hover:border-destructive/30 transition-colors shadow-sm relative overflow-hidden">
-                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-destructive/60 group-hover:bg-destructive transition-colors"></div>
-                                    <CardContent className="p-5 pl-7">
-                                        <div className="flex items-start justify-between">
-                                            <div>
-                                                <div className="flex items-center gap-2 font-medium mb-1 text-destructive">
-                                                    <CalendarOff size={16} />
-                                                    Abwesend
-                                                </div>
-                                                <div className="font-bold text-lg">
-                                                    {format(parseISO(toff.startDate), 'dd.MM.yyyy')}
-                                                    {toff.startDate !== toff.endDate && (
-                                                        <>
-                                                            <span className="mx-2 text-muted-foreground font-light">-</span>
-                                                            {format(parseISO(toff.endDate), 'dd.MM.yyyy')}
-                                                        </>
+                            {timeOffs.map(toff => {
+                                const isGlobal = toff.userId === null;
+                                const canDelete = !isGlobal || user?.isAdmin;
+
+                                return (
+                                    <Card 
+                                        key={toff.id} 
+                                        className={cn(
+                                            "group transition-all shadow-sm relative overflow-hidden",
+                                            isGlobal ? "border-amber-300 bg-amber-50/20 hover:border-amber-400" : "border-border hover:border-destructive/30"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "absolute left-0 top-0 bottom-0 w-1 transition-colors",
+                                            isGlobal ? "bg-amber-500" : "bg-destructive/60 group-hover:bg-destructive"
+                                        )} />
+                                        <CardContent className="p-5 pl-7">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <div className={cn(
+                                                        "flex items-center gap-1.5 font-medium mb-1 text-sm",
+                                                        isGlobal ? "text-amber-800" : "text-destructive"
+                                                    )}>
+                                                        {isGlobal ? <Globe size={15} className="text-amber-600" /> : <CalendarOff size={15} />}
+                                                        {isGlobal ? "Zentrale Abwesenheit (Für alle)" : "Persönlich abwesend"}
+                                                    </div>
+                                                    <div className="font-bold text-lg text-foreground">
+                                                        {format(parseISO(toff.startDate), 'dd.MM.yyyy')}
+                                                        {toff.startDate !== toff.endDate && (
+                                                            <>
+                                                                <span className="mx-2 text-muted-foreground font-light">-</span>
+                                                                {format(parseISO(toff.endDate), 'dd.MM.yyyy')}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    {toff.reason && (
+                                                        <div className="text-sm text-muted-foreground mt-2 italic">
+                                                            "{toff.reason}"
+                                                        </div>
+                                                    )}
+                                                    {isGlobal && (
+                                                        <div className="text-xs text-amber-700/90 mt-2 font-medium">
+                                                            Organisationsweit für alle Anbieter blockiert
+                                                        </div>
                                                     )}
                                                 </div>
-                                                {toff.reason && (
-                                                    <div className="text-sm text-muted-foreground mt-2 italic">
-                                                        "{toff.reason}"
-                                                    </div>
-                                                )}
+                                                <div>
+                                                    {canDelete ? (
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon" 
+                                                            className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" 
+                                                            onClick={() => deleteTimeOff(toff.id)}
+                                                            title={isGlobal ? "Zentrale Abwesenheit löschen" : "Abwesenheit löschen"}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </Button>
+                                                    ) : (
+                                                        <span title="Zentrale Abwesenheit (kann nur von Administratoren verwaltet werden)" className="text-muted-foreground/60 p-1 block">
+                                                            <Lock size={14} />
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteTimeOff(toff.id)}>
-                                                    <Trash2 size={16} />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
                             {timeOffs.length === 0 && (
                                 <div className="col-span-full py-16 text-center border-2 border-dashed border-muted rounded-xl bg-muted/20">
                                     <p className="text-muted-foreground">Keine Abwesenheiten geplant.</p>
@@ -512,11 +549,31 @@ const Availability = () => {
                                 <Label htmlFor="reason">Grund (Optional)</Label>
                                 <Input
                                     id="reason"
-                                    placeholder="z.B. Urlaub"
+                                    placeholder="z.B. Schulferien, Urlaub, Schließtage"
                                     value={newTimeOff.reason}
                                     onChange={e => setNewTimeOff({ ...newTimeOff, reason: e.target.value })}
                                 />
                             </div>
+
+                            {user?.isAdmin && (
+                                <div className="flex items-start space-x-3 p-3 rounded-lg border bg-amber-50/60 border-amber-200">
+                                    <Checkbox
+                                        id="isGlobalTimeOff"
+                                        checked={newTimeOff.isGlobal}
+                                        onCheckedChange={checked => setNewTimeOff({ ...newTimeOff, isGlobal: checked })}
+                                        className="mt-0.5"
+                                    />
+                                    <div className="grid gap-1 leading-none">
+                                        <Label htmlFor="isGlobalTimeOff" className="cursor-pointer font-medium text-amber-950 flex items-center gap-1.5 text-sm">
+                                            <Globe size={14} className="text-amber-700" />
+                                            Zentrale Abwesenheit (Für alle festlegen)
+                                        </Label>
+                                        <p className="text-xs text-amber-900/80">
+                                            Gilt für alle Anbieter (z. B. Schulferien, Schließtage, Feiertage). An diesen Tagen kann bei niemandem ein Termin gebucht werden.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
 
                             <DialogFooter className="pt-4">
                                 <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Abbrechen</Button>

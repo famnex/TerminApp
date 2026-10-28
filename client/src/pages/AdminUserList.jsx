@@ -20,7 +20,7 @@ import {
     TableRow,
 } from "../components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Building2, Users as UsersIcon, Star, GitMerge, AlertTriangle, Loader2 } from 'lucide-react';
+import { Building2, Users as UsersIcon, Star, GitMerge, AlertTriangle, Loader2, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AdminUserList = () => {
@@ -37,6 +37,7 @@ const AdminUserList = () => {
     const [uploadingImage, setUploadingImage] = useState(false);
     const [duplicateGroups, setDuplicateGroups] = useState([]);
     const [merging, setMerging] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Department Form State
     const [deptFormData, setDeptFormData] = useState({
@@ -291,6 +292,22 @@ const AdminUserList = () => {
         });
     };
 
+        const filteredUsers = (Array.isArray(users) ? users : [])
+        .filter(u => {
+            if (!searchTerm.trim()) return true;
+            const term = searchTerm.toLowerCase();
+            const matchesName = (u.displayName || '').toLowerCase().includes(term);
+            const matchesUsername = (u.username || '').toLowerCase().includes(term);
+            const matchesEmail = (u.email || '').toLowerCase().includes(term);
+            const matchesPosition = (u.position || '').toLowerCase().includes(term);
+            const matchesDept = u.Departments && u.Departments.some(d => (d.name || '').toLowerCase().includes(term));
+            return matchesName || matchesUsername || matchesEmail || matchesPosition || matchesDept;
+        })
+        .sort((a, b) => 
+            (a.displayName || '').localeCompare(b.displayName || '', 'de', { sensitivity: 'base' }) ||
+            (a.username || '').localeCompare(b.username || '', 'de', { sensitivity: 'base' })
+        );
+
     if (loading && !users.length) return <div className="flex justify-center p-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
 
     const isLdap = formData.authMethod === 'ldap' || formData.authMethod === 'sso';
@@ -375,11 +392,46 @@ const AdminUserList = () => {
                         </Card>
                     )}
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Alle Benutzer</CardTitle>
-                            <CardDescription>
-                                Eine Übersicht aller registrierten Benutzer im System.
-                            </CardDescription>
+                        <CardHeader className="space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div>
+                                    <CardTitle>Alle Benutzer</CardTitle>
+                                    <CardDescription>
+                                        Eine Übersicht aller registrierten Benutzer im System (alphabetisch sortiert).
+                                    </CardDescription>
+                                </div>
+                                <div className="relative w-full sm:w-80">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Suchen nach Name, Email, Position..."
+                                        className="pl-9 pr-8 h-9"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                    {searchTerm && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchTerm('')}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                                            title="Suche leeren"
+                                        >
+                                            <X className="h-3.5 w-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            {searchTerm && (
+                                <div className="text-xs text-muted-foreground flex items-center justify-between pt-1 border-t">
+                                    <span>Gefiltert: <strong>{filteredUsers.length}</strong> von {users.length} Benutzern</span>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setSearchTerm('')} 
+                                        className="text-primary hover:underline text-xs"
+                                    >
+                                        Alle anzeigen
+                                    </button>
+                                </div>
+                            )}
                         </CardHeader>
                         <CardContent>
                             <Table>
@@ -394,7 +446,7 @@ const AdminUserList = () => {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {users.map((u) => (
+                                    {filteredUsers.map((u) => (
                                         <TableRow key={u.id} className="group">
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-3">
@@ -472,6 +524,22 @@ const AdminUserList = () => {
                                             </TableCell>
                                         </TableRow>
                                     ))}
+                                {filteredUsers.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                                                {searchTerm ? (
+                                                    <div className="space-y-2">
+                                                        <p>Keine Benutzer für die Suche <strong>"{searchTerm}"</strong> gefunden.</p>
+                                                        <Button variant="outline" size="sm" onClick={() => setSearchTerm('')}>
+                                                            Suche zurücksetzen
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <p>Keine Benutzer vorhanden.</p>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                         </CardContent>
