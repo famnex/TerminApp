@@ -97,13 +97,14 @@ const mailService = {
             const appUrl = rawAppUrl.replace(/\/$/, '');
 
             const formattedDate = formatGermanDate(booking.slotStartTime);
-            const customerCancelUrl = `${appUrl}/#/cancel/${booking.cancellationToken}?role=customer`;
-            const providerCancelUrl = `${appUrl}/#/cancel/${booking.cancellationToken}?role=provider`;
+            const customerCancelUrl = `${appUrl}/#/cancel/${booking.cancellationToken}`;
+            const providerToken = fullBooking?.providerCancellationToken || booking.providerCancellationToken || booking.cancellationToken;
+            const providerCancelUrl = `${appUrl}/#/cancel/${providerToken}`;
             const providerDashboardUrl = `${appUrl}/#/dashboard/appointments`;
 
-            // Create iCal with full details
-            const calendar = ical({ name: 'Terminbuchung' });
-            calendar.createEvent({
+            // Create iCal for Customer
+            const customerCalendar = ical({ name: 'Terminbuchung' });
+            customerCalendar.createEvent({
                 start: booking.slotStartTime,
                 end: booking.slotEndTime,
                 summary: topicTitle,
@@ -115,7 +116,23 @@ const mailService = {
                     { name: booking.customerName || 'Teilnehmer', email: booking.customerEmail }
                 ]
             });
-            const icalString = calendar.toString();
+            const customerIcalString = customerCalendar.toString();
+
+            // Create iCal for Provider
+            const providerCalendar = ical({ name: 'Terminbuchung' });
+            providerCalendar.createEvent({
+                start: booking.slotStartTime,
+                end: booking.slotEndTime,
+                summary: `${topicTitle} mit ${booking.customerName || 'Kunde'}`,
+                description: `Termin mit ${booking.customerName || 'Kunde'}\nE-Mail: ${booking.customerEmail}\nTelefon: ${booking.customerPhone || 'Keine Angabe'}\nThema: ${topicTitle}\nOrt: ${location}`,
+                location: location,
+                url: providerCancelUrl,
+                organizer: { name: expertName, email: expertEmail || config.smtp_from_email || config.smtp_user || 'noreply@cloud.mso-hef.de' },
+                attendees: [
+                    { name: booking.customerName || 'Teilnehmer', email: booking.customerEmail }
+                ]
+            });
+            const providerIcalString = providerCalendar.toString();
 
             // 1. Send Customer Confirmation Email
             if (customerEmail && customerEmail.trim() !== '') {
@@ -170,7 +187,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                     icalEvent: {
                         filename: 'termin.ics',
                         method: 'REQUEST',
-                        content: icalString
+                        content: customerIcalString
                     }
                 });
                 console.log('[MailService] Confirmation sent to customer:', customerEmail);
@@ -229,7 +246,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                     icalEvent: {
                         filename: 'termin.ics',
                         method: 'REQUEST',
-                        content: icalString
+                        content: providerIcalString
                     }
                 });
                 console.log('[MailService] Confirmation notice sent to expert:', expertEmail);

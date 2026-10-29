@@ -242,8 +242,15 @@ router.post('/recover', async (req, res) => {
 router.get('/cancel-info/:token', async (req, res) => {
     try {
         const { token } = req.params;
+        const { Op } = require('sequelize');
+
         const booking = await Booking.findOne({
-            where: { cancellationToken: token },
+            where: {
+                [Op.or]: [
+                    { cancellationToken: token },
+                    { providerCancellationToken: token }
+                ]
+            },
             include: [
                 { model: Topic },
                 { model: User, as: 'Provider' }
@@ -254,11 +261,20 @@ router.get('/cancel-info/:token', async (req, res) => {
             return res.status(404).json({ error: 'Buchung nicht gefunden oder ungültiger Link.' });
         }
 
+        // Determine role strictly from the token
+        let role = 'customer';
+        if (booking.providerCancellationToken && booking.providerCancellationToken === token) {
+            role = 'provider';
+        } else if (req.query.role === 'provider' && (!booking.providerCancellationToken || booking.cancellationToken === token)) {
+            role = 'provider';
+        }
+
         const providerId = booking.providerId || booking.Topic?.userId;
         const topicId = booking.topicId || booking.Topic?.id;
 
         res.json({
             id: booking.id,
+            role,
             status: booking.status,
             cancellationReason: booking.cancellationReason,
             slotStartTime: booking.slotStartTime,
@@ -282,9 +298,16 @@ router.get('/cancel-info/:token', async (req, res) => {
 // POST /api/public/cancel
 router.post('/cancel', async (req, res) => {
     try {
-        const { token, role, reasonType, customReason, reason } = req.body;
+        const { token, reasonType, customReason, reason } = req.body;
+        const { Op } = require('sequelize');
+
         const booking = await Booking.findOne({
-            where: { cancellationToken: token },
+            where: {
+                [Op.or]: [
+                    { cancellationToken: token },
+                    { providerCancellationToken: token }
+                ]
+            },
             include: [
                 { model: Topic },
                 { model: User, as: 'Provider' }
@@ -294,7 +317,13 @@ router.post('/cancel', async (req, res) => {
         if (!booking) return res.status(404).json({ error: 'Buchung nicht gefunden.' });
         if (booking.status === 'cancelled') return res.status(400).json({ error: 'Dieser Termin wurde bereits storniert.' });
 
-        const effectiveRole = role === 'provider' ? 'provider' : 'customer';
+        // Determine role strictly from the token
+        let effectiveRole = 'customer';
+        if (booking.providerCancellationToken && booking.providerCancellationToken === token) {
+            effectiveRole = 'provider';
+        } else if (req.body.role === 'provider' && (!booking.providerCancellationToken || booking.cancellationToken === token)) {
+            effectiveRole = 'provider';
+        }
         let cancellationReasonText = '';
 
         if (effectiveRole === 'provider') {

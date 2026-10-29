@@ -7,6 +7,11 @@ const Booking = sequelize.define('Booking', {
         defaultValue: DataTypes.UUIDV4,
         allowNull: false,
     },
+    providerCancellationToken: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        allowNull: true,
+    },
     slotStartTime: {
         type: DataTypes.DATE,
         allowNull: false,

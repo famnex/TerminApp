@@ -96,7 +96,7 @@ Wenn jemand einen Termin bei dir bucht, erhältst du automatisch eine Benachrich
 Die TerminApp unterscheidet präzise, wer einen Termin storniert, und stellt dafür maßgeschneiderte Dialoge und E-Mail-Vorlagen bereit.
 
 ### 1. Absage durch den Kunden
-*   Der Kunde erhält bei der Buchung einen Link zur Terminverwaltung/Stornierung (`?role=customer`).
+*   Der Kunde erhält bei der Buchung einen individuellen Stornierungslink mit seinem persönlichen Kundentoken.
 *   Auf der Stornierungsseite wählt der Kunde einen passenden Grund:
     *   **Fälschlicherweise gebucht**
     *   **Falsches Datum / Uhrzeit gewählt**
@@ -107,7 +107,7 @@ Die TerminApp unterscheidet präzise, wer einen Termin storniert, und stellt daf
     *   Der **Anbieter (Experte)** erhält eine E-Mail mit den genauen Kundendaten (Name, E-Mail, Telefon) und dem vom Kunden gewählten Absagegrund. Der Zeitslot wird sofort wieder freigegeben.
 
 ### 2. Absage durch den Anbieter / Experten
-*   Über das Dashboard (**Meine Termine**) oder direkt über den Absagelink aus der Buchungs-E-Mail (`?role=provider`) kann der Anbieter Termine absagen.
+*   Über das Dashboard (**Meine Termine**) oder direkt über den Absagelink aus der Buchungs-E-Mail mit dem anbieterspezifischen Token kann der Anbieter Termine absagen. Die Rolle ist fest an den jeweiligen Link/Token gekoppelt und kann auf der Stornierungsseite nicht manuell geändert werden.
 *   Zur Auswahl stehen anbieterspezifische Optionen:
     *   **Kunde ist nicht zum Termin erschienen (No-Show):** Der Kunde wird freundlich informiert mit Link zur Neubuchung.
     *   **Anbieter ist leider krank:** Der Kunde wird über den krankheitsbedingten Ausfall informiert mit Entschuldigung und Buchungslink.

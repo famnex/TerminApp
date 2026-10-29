@@ -52,6 +52,9 @@ const CancellationPage = () => {
         api.get(`/public/cancel-info/${token}`)
             .then(res => {
                 setBooking(res.data);
+                if (res.data.role) {
+                    setRole(res.data.role);
+                }
                 if (res.data.status === 'cancelled') {
                     setSubmitted(true);
                 }
@@ -220,7 +223,7 @@ const CancellationPage = () => {
                     <div>
                         <h1 className="text-xl md:text-2xl font-bold text-gray-900">Termin absagen</h1>
                         <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-                            {role === 'provider' ? 'Absage als Anbieter / Experte' : 'Absage als Kunde'}
+                            {role === 'provider' ? 'Terminabsage als Anbieter / Experte' : 'Terminstornierung durch Kunde'}
                         </p>
                     </div>
                     <Link
@@ -271,38 +274,7 @@ const CancellationPage = () => {
                     </div>
                 )}
 
-                {/* Role Switcher Pill */}
-                <div className="mb-6">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
-                        Rolle zur Absage wählen:
-                    </label>
-                    <div className="grid grid-cols-2 p-1 bg-muted rounded-xl text-xs md:text-sm font-medium">
-                        <button
-                            type="button"
-                            onClick={() => setRole('customer')}
-                            className={`py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-all ${
-                                role === 'customer'
-                                    ? 'bg-background text-foreground shadow-sm font-semibold'
-                                    : 'text-muted-foreground hover:text-foreground'
-                            }`}
-                        >
-                            <User size={16} />
-                            <span>Ich bin der Kunde</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setRole('provider')}
-                            className={`py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-all ${
-                                role === 'provider'
-                                    ? 'bg-background text-foreground shadow-sm font-semibold'
-                                    : 'text-muted-foreground hover:text-foreground'
-                            }`}
-                        >
-                            <Briefcase size={16} />
-                            <span>Ich bin der Experte / Anbieter</span>
-                        </button>
-                    </div>
-                </div>
+
 
                 {/* Cancellation Form */}
                 <form onSubmit={handleCancel} className="space-y-5">

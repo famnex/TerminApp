@@ -100,6 +100,25 @@ sequelize.sync().then(async () => {
         console.error('Database migration error for locationType:', dbErr);
     }
 
+    try {
+        await sequelize.query("ALTER TABLE Bookings ADD COLUMN providerCancellationToken VARCHAR(255) DEFAULT NULL");
+        console.log('Database upgrade: Added providerCancellationToken column to Bookings table');
+    } catch (dbErr) {
+        // Safe to ignore if column already exists
+    }
+
+    try {
+        const [bookingsWithoutProviderToken] = await sequelize.query("SELECT id FROM Bookings WHERE providerCancellationToken IS NULL");
+        const crypto = require('crypto');
+        for (const b of bookingsWithoutProviderToken) {
+            await sequelize.query("UPDATE Bookings SET providerCancellationToken = ? WHERE id = ?", {
+                replacements: [crypto.randomUUID(), b.id]
+            });
+        }
+    } catch (dbErr) {
+        // Safe to ignore
+    }
+
     // Start Jobs
     const startReminderJob = require('./jobs/reminders');
     startReminderJob();

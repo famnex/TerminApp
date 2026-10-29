@@ -53,7 +53,8 @@ Diese Datei dokumentiert die Struktur der Datenbank für die TerminApp.
 
 ### Bookings
 - `id`: INTEGER (Primary Key, Auto-increment)
-- `cancellationToken`: UUID (Default: UUIDV4, Not Null)
+- `cancellationToken`: UUID (Default: UUIDV4, Not Null) - Stornierungstoken für den Kunden
+- `providerCancellationToken`: UUID (Default: UUIDV4, Nullable) - Separates Stornierungstoken für den Anbieter/Experten zur kryptographisch eindeutigen Rollenerkennung
 - `slotStartTime`: DATETIME (Not Null)
 - `slotEndTime`: DATETIME (Not Null)
 - `customerName`: STRING (Not Null)
