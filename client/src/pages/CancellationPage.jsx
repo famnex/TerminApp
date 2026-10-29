@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import api from '../api';
+import { useAuth } from '../context/AuthContext';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 import {
@@ -23,6 +24,7 @@ const CancellationPage = () => {
     const { token } = useParams();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     // Determine initial role from URL query param (?role=provider or ?role=customer)
     const initialRole = searchParams.get('role') === 'provider' ? 'provider' : 'customer';
@@ -54,6 +56,10 @@ const CancellationPage = () => {
                 setBooking(res.data);
                 if (res.data.role) {
                     setRole(res.data.role);
+                }
+                // If logged in as the provider or admin, ensure provider role
+                if (user && (user.id === res.data.providerId || user.isAdmin)) {
+                    setRole('provider');
                 }
                 if (res.data.status === 'cancelled') {
                     setSubmitted(true);
@@ -493,10 +499,20 @@ const CancellationPage = () => {
                             disabled={submitting}
                             className="inline-flex items-center justify-center rounded-lg text-sm font-semibold h-11 px-4 bg-red-600 text-white hover:bg-red-700 transition-colors flex-1 disabled:opacity-50 shadow-sm"
                         >
-                            {submitting ? 'Stornieren...' : 'Termin jetzt absagen'}
+                            {submitting ? 'Stornieren...' : (role === 'provider' ? 'Termin als Anbieter absagen' : 'Termin jetzt absagen')}
                         </button>
                     </div>
                 </form>
+
+                {role === 'customer' && !user && (
+                    <div className="text-center mt-6 pt-4 border-t text-xs text-muted-foreground">
+                        Sind Sie der Anbieter dieses Termins?{' '}
+                        <Link to="/admin" className="text-primary hover:underline font-medium">
+                            Hier anmelden
+                        </Link>{' '}
+                        oder Termine im Dashboard verwalten.
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -261,11 +261,34 @@ router.get('/cancel-info/:token', async (req, res) => {
             return res.status(404).json({ error: 'Buchung nicht gefunden oder ungültiger Link.' });
         }
 
-        // Determine role strictly from the token
+        // Check if caller is authenticated as provider or admin
+        let loggedInUserId = null;
+        let isAdmin = false;
+        const authHeader = req.headers['authorization'];
+        const bearerToken = authHeader && authHeader.split(' ')[1];
+        if (bearerToken) {
+            try {
+                const jwt = require('jsonwebtoken');
+                const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_change_me';
+                const decoded = jwt.verify(bearerToken, JWT_SECRET);
+                loggedInUserId = decoded.id;
+                isAdmin = decoded.isAdmin;
+            } catch (e) {
+                // Ignore invalid tokens
+            }
+        }
+
+        // Determine role:
+        // 1. If providerCancellationToken matches token -> definitely provider
+        // 2. If legacy query param ?role=provider -> provider
+        // 3. If logged-in user is the provider or admin -> provider
+        // 4. Otherwise -> customer
         let role = 'customer';
         if (booking.providerCancellationToken && booking.providerCancellationToken === token) {
             role = 'provider';
-        } else if (req.query.role === 'provider' && (!booking.providerCancellationToken || booking.cancellationToken === token)) {
+        } else if (req.query.role === 'provider') {
+            role = 'provider';
+        } else if (loggedInUserId && (loggedInUserId === booking.providerId || isAdmin)) {
             role = 'provider';
         }
 
@@ -317,11 +340,29 @@ router.post('/cancel', async (req, res) => {
         if (!booking) return res.status(404).json({ error: 'Buchung nicht gefunden.' });
         if (booking.status === 'cancelled') return res.status(400).json({ error: 'Dieser Termin wurde bereits storniert.' });
 
-        // Determine role strictly from the token
+        // Check if caller is authenticated as provider or admin
+        let loggedInUserId = null;
+        let isAdmin = false;
+        const authHeader = req.headers['authorization'];
+        const bearerToken = authHeader && authHeader.split(' ')[1];
+        if (bearerToken) {
+            try {
+                const jwt = require('jsonwebtoken');
+                const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_change_me';
+                const decoded = jwt.verify(bearerToken, JWT_SECRET);
+                loggedInUserId = decoded.id;
+                isAdmin = decoded.isAdmin;
+            } catch (e) {
+                // Ignore invalid tokens
+            }
+        }
+
         let effectiveRole = 'customer';
         if (booking.providerCancellationToken && booking.providerCancellationToken === token) {
             effectiveRole = 'provider';
-        } else if (req.body.role === 'provider' && (!booking.providerCancellationToken || booking.cancellationToken === token)) {
+        } else if (req.body.role === 'provider' || req.query.role === 'provider') {
+            effectiveRole = 'provider';
+        } else if (loggedInUserId && (loggedInUserId === booking.providerId || isAdmin)) {
             effectiveRole = 'provider';
         }
         let cancellationReasonText = '';
