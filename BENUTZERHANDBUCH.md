@@ -91,15 +91,30 @@ Wenn jemand einen Termin bei dir bucht, erhältst du automatisch eine Benachrich
 
 ---
 
-## Artikel 6: Termine absagen / stornieren
+## Artikel 6: Termine absagen / stornieren (Kunde vs. Anbieter)
 
-Falls du krank wirst oder ein dringender Termin dazwischenkommt, kannst du gebuchte Termine absagen. Die App übernimmt die Kommunikation für dich.
+Die TerminApp unterscheidet präzise, wer einen Termin storniert, und stellt dafür maßgeschneiderte Dialoge und E-Mail-Vorlagen bereit.
 
-1.  Gehe unter **Meine Termine** zu dem Termin, den du stornieren musst.
-2.  Klicke neben dem Eintrag auf **Absagen** (Mülltonnen-Symbol oder Storno-Button).
-3.  **Absagegrund:** Gib kurz an, warum der Termin entfällt (z. B. *„Verschiebung wegen Krankheit – Bitte buchen Sie einen Ersatztermin“*).
-4.  Klicke auf **Stornieren bestätigen**.
-5.  Der Kunde erhält sofort eine automatische E-Mail über die Absage, die auch deinen persönlichen Absagegrund enthält. Das Zeitfenster wird in deinem Kalender sofort wieder freigegeben.
+### 1. Absage durch den Kunden
+*   Der Kunde erhält bei der Buchung einen Link zur Terminverwaltung/Stornierung (`?role=customer`).
+*   Auf der Stornierungsseite wählt der Kunde einen passenden Grund:
+    *   **Fälschlicherweise gebucht**
+    *   **Falsches Datum / Uhrzeit gewählt**
+    *   **Krank**
+    *   **Sonstiges (mit optionalem Freitext)**
+*   **Benachrichtigungen:**
+    *   Der **Kunde** erhält eine Bestätigung der Stornierung samt Direktlink zur Neu-Buchung.
+    *   Der **Anbieter (Experte)** erhält eine E-Mail mit den genauen Kundendaten (Name, E-Mail, Telefon) und dem vom Kunden gewählten Absagegrund. Der Zeitslot wird sofort wieder freigegeben.
+
+### 2. Absage durch den Anbieter / Experten
+*   Über das Dashboard (**Meine Termine**) oder direkt über den Absagelink aus der Buchungs-E-Mail (`?role=provider`) kann der Anbieter Termine absagen.
+*   Zur Auswahl stehen anbieterspezifische Optionen:
+    *   **Kunde ist nicht zum Termin erschienen (No-Show):** Der Kunde wird freundlich informiert mit Link zur Neubuchung.
+    *   **Anbieter ist leider krank:** Der Kunde wird über den krankheitsbedingten Ausfall informiert mit Entschuldigung und Buchungslink.
+    *   **Sonstiges:** Eigene Begründung oder individuelle Nachricht an den Kunden verfassen.
+*   **Benachrichtigungen:**
+    *   Der Kunde wird je nach gewählter Option passend informiert.
+    *   Der Anbieter erhält eine Bestätigung, dass die Stornierung durchgeführt und der Kunde benachrichtigt wurde.
 
 ---
 

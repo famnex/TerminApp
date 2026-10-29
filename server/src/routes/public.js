@@ -238,22 +238,99 @@ router.post('/recover', async (req, res) => {
     }
 });
 
+// GET /api/public/cancel-info/:token
+router.get('/cancel-info/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+        const booking = await Booking.findOne({
+            where: { cancellationToken: token },
+            include: [
+                { model: Topic },
+                { model: User, as: 'Provider' }
+            ]
+        });
+
+        if (!booking) {
+            return res.status(404).json({ error: 'Buchung nicht gefunden oder ungültiger Link.' });
+        }
+
+        const providerId = booking.providerId || booking.Topic?.userId;
+        const topicId = booking.topicId || booking.Topic?.id;
+
+        res.json({
+            id: booking.id,
+            status: booking.status,
+            cancellationReason: booking.cancellationReason,
+            slotStartTime: booking.slotStartTime,
+            slotEndTime: booking.slotEndTime,
+            customerName: booking.customerName,
+            customerEmail: booking.customerEmail,
+            customerPhone: booking.customerPhone,
+            topicTitle: booking.Topic?.title || 'Termin',
+            topicDescription: booking.Topic?.description || '',
+            durationMinutes: booking.Topic?.durationMinutes || 0,
+            expertName: booking.Provider?.displayName || 'Experte',
+            location: booking.Provider?.location || 'Keine Angabe',
+            providerId,
+            topicId
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // POST /api/public/cancel
 router.post('/cancel', async (req, res) => {
     try {
-        const { token, reason } = req.body;
-        const booking = await Booking.findOne({ where: { cancellationToken: token } });
+        const { token, role, reasonType, customReason, reason } = req.body;
+        const booking = await Booking.findOne({
+            where: { cancellationToken: token },
+            include: [
+                { model: Topic },
+                { model: User, as: 'Provider' }
+            ]
+        });
 
         if (!booking) return res.status(404).json({ error: 'Buchung nicht gefunden.' });
-        if (booking.status === 'cancelled') return res.status(400).json({ error: 'Bereits storniert.' });
+        if (booking.status === 'cancelled') return res.status(400).json({ error: 'Dieser Termin wurde bereits storniert.' });
+
+        const effectiveRole = role === 'provider' ? 'provider' : 'customer';
+        let cancellationReasonText = '';
+
+        if (effectiveRole === 'provider') {
+            if (reasonType === 'no_show') {
+                cancellationReasonText = 'Kunde ist nicht zum Termin erschienen';
+            } else if (reasonType === 'sick') {
+                cancellationReasonText = 'Anbieter krankheitsbedingt verhindert';
+            } else {
+                cancellationReasonText = (customReason || reason) ? ('Sonstiges: ' + (customReason || reason)) : 'Storniert durch Anbieter';
+            }
+        } else {
+            // Customer cancellation
+            if (reasonType === 'wrongly_booked') {
+                cancellationReasonText = 'Fälschlicherweise gebucht';
+            } else if (reasonType === 'wrong_date_time') {
+                cancellationReasonText = 'Falsches Datum / Uhrzeit gewählt';
+            } else if (reasonType === 'sick_customer' || reasonType === 'sick') {
+                cancellationReasonText = 'Krank';
+            } else if (reasonType === 'other') {
+                cancellationReasonText = (customReason || reason) ? ('Sonstiges: ' + (customReason || reason)) : 'Sonstiges';
+            } else {
+                cancellationReasonText = customReason || reason || 'Storniert durch Kunde';
+            }
+        }
 
         booking.status = 'cancelled';
-        booking.cancellationReason = reason;
+        booking.cancellationReason = cancellationReasonText;
         await booking.save();
 
-        await mailService.sendCancellation(booking).catch(console.error);
+        await mailService.sendCancellation(booking, {
+            cancelledBy: effectiveRole,
+            reasonType,
+            customReason: customReason || reason
+        }).catch(console.error);
 
-        res.json({ success: true });
+        res.json({ success: true, booking });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

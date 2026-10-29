@@ -399,6 +399,54 @@ router.post('/smtp-test', async (req, res) => {
                     </div>
                 </div>
             </body></html>`;
+        } else if (type === 'cancellation_customer') {
+            subject = "✗ Test: Termin durch Kunden abgesagt: Strategiegespräch (Max Mustermann)";
+            text = `Test-Terminstornierung durch Kunden\n\nDer Kunde Max Mustermann (${recipient}) hat den folgenden Termin abgesagt:\n\nThema: Strategiegespräch (Test)\nZeit: Montag, 15. September 2026, 10:00 Uhr\nGrund der Absage: Fälschlicherweise gebucht\n\nDashboard: ${appUrl}/#/dashboard/appointments`;
+            html = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <div style="background-color: #ef4444; color: white; padding: 20px; text-align: center;">
+                        <h2 style="margin:0;">✗ Termin durch Kunden abgesagt</h2>
+                    </div>
+                    <div style="padding: 20px; background-color: #ffffff;">
+                        <p>Hallo <strong>Max Mustermann (Experte)</strong>,</p>
+                        <p>der Kunde <strong>Erika Musterfrau</strong> hat den folgenden Termin abgesagt:</p>
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin: 15px 0;">
+                            <div><strong>Thema:</strong> Strategiegespräch (Test)</div>
+                            <div><strong>Kunde:</strong> Erika Musterfrau</div>
+                            <div><strong>E-Mail:</strong> ${recipient}</div>
+                            <div><strong>Telefon:</strong> +49 123 456789</div>
+                            <div><strong>Zeit:</strong> Montag, 15. September 2026, 10:00 Uhr</div>
+                            <div><strong>Grund der Absage:</strong> Fälschlicherweise gebucht</div>
+                        </div>
+                        <p>Der gebuchte Zeitslot ist automatisch wieder freigegeben worden.</p>
+                        <div style="text-align: center; margin: 25px 0;">
+                            <a href="${appUrl}/#/dashboard/appointments" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Zu meinen Terminen</a>
+                        </div>
+                    </div>
+                </div>
+            </body></html>`;
+        } else if (type === 'booking_expert') {
+            subject = "📅 Test: Neue Terminbuchung: Strategiegespräch mit Max Mustermann";
+            text = `Neuer Termin gebucht\n\nHallo Max Mustermann (Experte),\nes wurde ein neuer Termin bei Ihnen gebucht.\n\nThema: Strategiegespräch (Test)\nKunde: Erika Musterfrau\nE-Mail: ${recipient}\nTelefon: +49 123 456789\nZeit: Montag, 15. September 2026, 10:00 Uhr`;
+            html = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <div style="background-color: #2563eb; color: white; padding: 20px; text-align: center;">
+                        <h2 style="margin:0;">📅 Neuer Termin gebucht</h2>
+                    </div>
+                    <div style="padding: 20px; background-color: #ffffff;">
+                        <p>Hallo <strong>Max Mustermann (Experte)</strong>,</p>
+                        <p>es wurde ein neuer Termin bei Ihnen gebucht:</p>
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin: 15px 0;">
+                            <div><strong>Thema:</strong> Strategiegespräch (Test)</div>
+                            <div><strong>Kunde:</strong> Erika Musterfrau</div>
+                            <div><strong>E-Mail:</strong> ${recipient}</div>
+                            <div><strong>Telefon:</strong> +49 123 456789</div>
+                            <div><strong>Zeit:</strong> Montag, 15. September 2026, 10:00 Uhr</div>
+                            <div><strong>Ort:</strong> Raum 101</div>
+                        </div>
+                    </div>
+                </div>
+            </body></html>`;
         } else if (type === 'reminder') {
             subject = "🔔 Test-Terminerinnerung: Strategiegespräch (Test) in 10 Minuten";
             text = `Test-Terminerinnerung\n\nIhr Termin beginnt in 10 Minuten!\n\nThema: Strategiegespräch (Test)\nExperte: Max Mustermann\nZeit: Montag, 15. September 2026, 10:00 Uhr\nOrt: Raum 101\nName: Test-Kunde\nE-Mail: ${recipient}\nTelefon: +49 123 456789`;

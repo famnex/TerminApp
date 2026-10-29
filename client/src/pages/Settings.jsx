@@ -482,7 +482,9 @@ const Settings = () => {
                                 onChange={e => setTestMailType(e.target.value)}
                             >
                                 <option value="standard">Standard Test-E-Mail (SMTP-Prüfung)</option>
-                                <option value="confirmation">Terminbestätigung</option>
+                                <option value="confirmation">Terminbestätigung (an Kunde)</option>
+                                <option value="booking_expert">Neue Buchung (an Anbieter)</option>
+                                <option value="cancellation_customer">Terminstornierung (durch Kunde storniert)</option>
                                 <option value="cancellation_noshow">Terminstornierung (Kunde nicht erschienen)</option>
                                 <option value="cancellation_sick">Terminstornierung (Anbieter krank)</option>
                                 <option value="cancellation_other">Terminstornierung (Sonstiges / Freitext)</option>

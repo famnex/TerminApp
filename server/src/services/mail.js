@@ -74,7 +74,6 @@ const mailService = {
         console.log('[MailService] sendConfirmation started for booking:', booking.id);
         try {
             const { transporter, fromAddress } = await getTransporter();
-            console.log('[MailService] Transporter created.');
 
             const fullBooking = await Booking.findByPk(booking.id, {
                 include: [
@@ -82,25 +81,12 @@ const mailService = {
                     { model: User, as: 'Provider' }
                 ]
             });
-            console.log('[MailService] Full booking fetched.');
 
             const topicTitle = fullBooking?.Topic?.title || 'Termin';
             const expertName = fullBooking?.Provider?.displayName || 'Experte';
             const location = fullBooking?.Provider?.location || 'Keine Angabe';
             const expertEmail = fullBooking?.Provider?.email;
-
-            const recipients = [booking.customerEmail];
-            if (expertEmail) recipients.push(expertEmail);
-
-            // Filter out empty or invalid emails
-            const validRecipients = recipients.filter(email => email && email.trim() !== '');
-
-            if (validRecipients.length === 0) {
-                console.warn('[MailService] No valid recipients for confirmation. Skipping.');
-                return;
-            }
-
-            console.log('[MailService] Sending confirmation to:', validRecipients);
+            const customerEmail = booking.customerEmail;
 
             const globalSettingsList = await GlobalSettings.findAll();
             const config = {};
@@ -111,7 +97,9 @@ const mailService = {
             const appUrl = rawAppUrl.replace(/\/$/, '');
 
             const formattedDate = formatGermanDate(booking.slotStartTime);
-            const cancelUrl = `${appUrl}/#/cancel/${booking.cancellationToken}`;
+            const customerCancelUrl = `${appUrl}/#/cancel/${booking.cancellationToken}?role=customer`;
+            const providerCancelUrl = `${appUrl}/#/cancel/${booking.cancellationToken}?role=provider`;
+            const providerDashboardUrl = `${appUrl}/#/dashboard/appointments`;
 
             // Create iCal with full details
             const calendar = ical({ name: 'Terminbuchung' });
@@ -121,34 +109,38 @@ const mailService = {
                 summary: topicTitle,
                 description: `Termin mit ${expertName}\nThema: ${topicTitle}\nOrt: ${location}`,
                 location: location,
-                url: cancelUrl,
+                url: customerCancelUrl,
                 organizer: { name: expertName, email: expertEmail || config.smtp_from_email || config.smtp_user || 'noreply@cloud.mso-hef.de' },
                 attendees: [
                     { name: booking.customerName || 'Teilnehmer', email: booking.customerEmail }
                 ]
             });
+            const icalString = calendar.toString();
 
-            const htmlContent = `<!DOCTYPE html>
+            // 1. Send Customer Confirmation Email
+            if (customerEmail && customerEmail.trim() !== '') {
+                const customerHtml = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <style>
 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-.container { max-width: 600px; margin: 0 auto; padding: 20px; }
-.header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
-.content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+.container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; }
+.header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 6px 6px 0 0; }
+.content { background-color: #f9f9f9; padding: 20px; }
 .detail { margin: 10px 0; }
 .detail strong { display: inline-block; width: 100px; }
-.button { display: inline-block; padding: 10px 20px; background-color: #f44336; color: white; text-decoration: none; margin-top: 20px; }
+.button { display: inline-block; padding: 10px 20px; background-color: #f44336; color: #ffffff !important; text-decoration: none; margin-top: 20px; border-radius: 4px; font-weight: bold; }
 .footer { margin-top: 20px; font-size: 12px; color: #777; }
 </style>
 </head>
 <body>
 <div class="container">
 <div class="header">
-<h2>✓ Terminbestätigung</h2>
+<h2 style="margin:0;">✓ Terminbestätigung</h2>
 </div>
 <div class="content">
+<p>Hallo <strong>${booking.customerName || 'Kunde'}</strong>,</p>
 <p>Ihr Termin wurde erfolgreich gebucht.</p>
 <div class="detail"><strong>Thema:</strong> ${topicTitle}</div>
 <div class="detail"><strong>Experte:</strong> ${expertName}</div>
@@ -158,7 +150,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 <div class="detail"><strong>E-Mail:</strong> ${booking.customerEmail || 'Nicht angegeben'}</div>
 <div class="detail"><strong>Telefon:</strong> ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}</div>
 <p style="margin-top: 20px;">Ein Kalendereintrag (iCal) ist dieser E-Mail beigefügt.</p>
-<a href="${cancelUrl}" class="button">Termin stornieren</a>
+<a href="${customerCancelUrl}" class="button">Termin stornieren</a>
 </div>
 <div class="footer">
 <p>Sie erhalten 10 Minuten vor dem Termin eine Erinnerung.</p>
@@ -167,24 +159,83 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 </body>
 </html>`;
 
-            const textContent = `Terminbestätigung\n\nIhr Termin wurde erfolgreich gebucht.\n\nThema: ${topicTitle}\nExperte: ${expertName}\nZeit: ${formattedDate}\nOrt: ${location}\nName: ${booking.customerName || 'Nicht angegeben'}\nE-Mail: ${booking.customerEmail || 'Nicht angegeben'}\nTelefon: ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}\n\nStornieren: ${cancelUrl}`;
+                const customerText = `Terminbestätigung\n\nHallo ${booking.customerName || 'Kunde'},\n\nIhr Termin wurde erfolgreich gebucht.\n\nThema: ${topicTitle}\nExperte: ${expertName}\nZeit: ${formattedDate}\nOrt: ${location}\nName: ${booking.customerName || 'Nicht angegeben'}\nE-Mail: ${booking.customerEmail || 'Nicht angegeben'}\nTelefon: ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}\n\nTermin stornieren: ${customerCancelUrl}`;
 
-            const info = await transporter.sendMail({
-                from: fromAddress,
-                to: validRecipients,
-                subject: '✓ Terminbestätigung: ' + topicTitle,
-                text: textContent,
-                html: htmlContent,
-                icalEvent: {
-                    filename: 'termin.ics',
-                    method: 'REQUEST',
-                    content: calendar.toString()
-                }
-            });
-            console.log('[MailService] Confirmation sent:', info.messageId);
+                await transporter.sendMail({
+                    from: fromAddress,
+                    to: customerEmail,
+                    subject: '✓ Terminbestätigung: ' + topicTitle,
+                    text: customerText,
+                    html: customerHtml,
+                    icalEvent: {
+                        filename: 'termin.ics',
+                        method: 'REQUEST',
+                        content: icalString
+                    }
+                });
+                console.log('[MailService] Confirmation sent to customer:', customerEmail);
+            }
+
+            // 2. Send Expert Notification Email
+            if (expertEmail && expertEmail.trim() !== '') {
+                const expertHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+.container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; }
+.header { background-color: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 6px 6px 0 0; }
+.content { background-color: #f9f9f9; padding: 20px; }
+.detail { margin: 10px 0; }
+.detail strong { display: inline-block; width: 100px; }
+.btn-container { margin-top: 25px; }
+.button-cancel { display: inline-block; padding: 10px 18px; background-color: #ef4444; color: #ffffff !important; text-decoration: none; margin-right: 10px; border-radius: 4px; font-weight: bold; }
+.button-dashboard { display: inline-block; padding: 10px 18px; background-color: #2563eb; color: #ffffff !important; text-decoration: none; border-radius: 4px; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h2 style="margin:0;">📅 Neuer Termin gebucht</h2>
+</div>
+<div class="content">
+<p>Hallo <strong>${expertName}</strong>,</p>
+<p>es wurde ein neuer Termin bei Ihnen gebucht:</p>
+<div class="detail"><strong>Thema:</strong> ${topicTitle}</div>
+<div class="detail"><strong>Kunde:</strong> ${booking.customerName || 'Nicht angegeben'}</div>
+<div class="detail"><strong>E-Mail:</strong> ${booking.customerEmail || 'Nicht angegeben'}</div>
+<div class="detail"><strong>Telefon:</strong> ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}</div>
+<div class="detail"><strong>Zeit:</strong> ${formattedDate}</div>
+<div class="detail"><strong>Ort:</strong> ${location}</div>
+<p style="margin-top: 20px;">Ein Kalendereintrag (iCal) ist dieser E-Mail beigefügt.</p>
+<div class="btn-container">
+    <a href="${providerCancelUrl}" class="button-cancel">Termin absagen</a>
+    <a href="${providerDashboardUrl}" class="button-dashboard">Zum Dashboard</a>
+</div>
+</div>
+</div>
+</body>
+</html>`;
+
+                const expertText = `Neuer Termin gebucht\n\nHallo ${expertName},\n\nes wurde ein neuer Termin bei Ihnen gebucht.\n\nThema: ${topicTitle}\nKunde: ${booking.customerName || 'Nicht angegeben'}\nE-Mail: ${booking.customerEmail || 'Nicht angegeben'}\nTelefon: ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}\nZeit: ${formattedDate}\nOrt: ${location}\n\nTermin absagen: ${providerCancelUrl}\nDashboard: ${providerDashboardUrl}`;
+
+                await transporter.sendMail({
+                    from: fromAddress,
+                    to: expertEmail,
+                    subject: `📅 Neuer Termin gebucht: ${topicTitle} mit ${booking.customerName || 'Kunde'}`,
+                    text: expertText,
+                    html: expertHtml,
+                    icalEvent: {
+                        filename: 'termin.ics',
+                        method: 'REQUEST',
+                        content: icalString
+                    }
+                });
+                console.log('[MailService] Confirmation notice sent to expert:', expertEmail);
+            }
         } catch (error) {
             console.error('[MailService] sendConfirmation FAILED:', error);
-            // Don't throw, just log, so we don't crash main thread if this is async
         }
     },
 
@@ -204,6 +255,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
             const topicTitle = fullBooking?.Topic?.title || 'Termin';
             const providerId = fullBooking?.providerId || fullBooking?.Topic?.userId;
             const topicId = fullBooking?.Topic?.id;
+            const location = fullBooking?.Provider?.location || 'Keine Angabe';
 
             // Fetch app_url for direct rebooking link
             const globalSettingsList = await GlobalSettings.findAll();
@@ -222,48 +274,177 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 rebookUrl = `${appUrl}/#/book/${providerId}`;
             }
 
-            const recipients = [booking.customerEmail];
-            if (expertEmail) recipients.push(expertEmail);
-
-            const validRecipients = recipients.filter(email => email && email.trim() !== '');
-
-            if (validRecipients.length === 0) {
-                console.warn('[MailService] No valid recipients for cancellation. Skipping.');
-                return;
-            }
-
-            console.log('[MailService] Sending cancellation to:', validRecipients);
-
             const formattedDate = formatGermanDate(booking.slotStartTime);
 
-            const reasonType = options.reasonType || 'other';
+            // Determine who cancelled
+            let cancelledBy = options.cancelledBy;
+            const reasonType = options.reasonType;
             const customReason = options.customReason || booking.cancellationReason || '';
 
-            let subject = `✗ Termin storniert: ${topicTitle}`;
-            let headline = `✗ Termin storniert`;
-            let reasonLabel = 'Absage durch Anbieter';
-            let mainMessageHtml = `<p>Der folgende Termin wurde storniert:</p>`;
-            let mainMessageText = `Der folgende Termin wurde storniert:\n\n`;
-
-            if (reasonType === 'no_show') {
-                subject = `Terminstornierung: Sie sind nicht zum Termin erschienen (${topicTitle})`;
-                headline = `Sie sind nicht zum Termin erschienen`;
-                reasonLabel = `Kunde ist nicht zum Termin erschienen`;
-                mainMessageHtml = `<p>Hallo <strong>${booking.customerName || 'Kunde'}</strong>,</p><p>Sie sind zum vereinbarten Termin am <strong>${formattedDate}</strong> leider nicht erschienen.</p>`;
-                mainMessageText = `Hallo ${booking.customerName || 'Kunde'},\n\nSie sind zum vereinbarten Termin am ${formattedDate} leider nicht erschienen.\n\n`;
-            } else if (reasonType === 'sick') {
-                subject = `Terminstornierung: Krankheitsbedingte Absage (${topicTitle})`;
-                headline = `Krankheitsbedingte Absage`;
-                reasonLabel = `Anbieter ist leider krank`;
-                mainMessageHtml = `<p>Hallo <strong>${booking.customerName || 'Kunde'}</strong>,</p><p>der vereinbarte Termin am <strong>${formattedDate}</strong> musste leider krankheitsbedingt durch <strong>${expertName}</strong> abgesagt werden. Wir bitten die Unannehmlichkeiten zu entschuldigen.</p>`;
-                mainMessageText = `Hallo ${booking.customerName || 'Kunde'},\n\nder vereinbarte Termin am ${formattedDate} musste leider krankheitsbedingt durch ${expertName} abgesagt werden. Wir bitten die Unannehmlichkeiten zu entschuldigen.\n\n`;
-            } else if (customReason) {
-                reasonLabel = customReason;
-                mainMessageHtml = `<p>Hallo <strong>${booking.customerName || 'Kunde'}</strong>,</p><p>der vereinbarte Termin am <strong>${formattedDate}</strong> wurde abgesagt.</p><p><strong>Begründung:</strong> ${customReason}</p>`;
-                mainMessageText = `Hallo ${booking.customerName || 'Kunde'},\n\nder vereinbarte Termin am ${formattedDate} wurde abgesagt.\nBegründung: ${customReason}\n\n`;
+            if (!cancelledBy) {
+                if (['wrongly_booked', 'wrong_date_time', 'sick_customer'].includes(reasonType)) {
+                    cancelledBy = 'customer';
+                } else if (['no_show'].includes(reasonType)) {
+                    cancelledBy = 'provider';
+                } else {
+                    cancelledBy = 'customer';
+                }
             }
 
-            const htmlContent = `<!DOCTYPE html>
+            if (cancelledBy === 'customer') {
+                // Determine Customer reason label
+                let reasonLabel = 'Storniert durch Kunde';
+                if (reasonType === 'wrongly_booked') {
+                    reasonLabel = 'Fälschlicherweise gebucht';
+                } else if (reasonType === 'wrong_date_time') {
+                    reasonLabel = 'Falsches Datum / Uhrzeit gewählt';
+                } else if (reasonType === 'sick_customer' || reasonType === 'sick') {
+                    reasonLabel = 'Krank';
+                } else if (reasonType === 'other') {
+                    reasonLabel = customReason ? `Sonstiges: ${customReason}` : 'Sonstige Gründe';
+                } else if (booking.cancellationReason) {
+                    reasonLabel = booking.cancellationReason;
+                }
+
+                // 1. Send confirmation to Customer
+                if (booking.customerEmail && booking.customerEmail.trim()) {
+                    const custSubject = `✓ Termin erfolgreich storniert: ${topicTitle}`;
+                    const custHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+.container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; }
+.header { background-color: #64748b; color: white; padding: 20px; text-align: center; border-radius: 6px 6px 0 0; }
+.content { background-color: #ffffff; padding: 20px; }
+.detail-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin: 15px 0; }
+.detail { margin: 8px 0; }
+.btn-container { text-align: center; margin: 25px 0; }
+.btn { background-color: #2563eb; color: #ffffff !important; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h2 style="margin:0;">✓ Termin storniert</h2>
+</div>
+<div class="content">
+<p>Hallo <strong>${booking.customerName || 'Kunde'}</strong>,</p>
+<p>Ihr vereinbarter Termin wurde wie gewünscht storniert.</p>
+<div class="detail-box">
+<div class="detail"><strong>Thema:</strong> ${topicTitle}</div>
+<div class="detail"><strong>Experte:</strong> ${expertName}</div>
+<div class="detail"><strong>Zeit:</strong> ${formattedDate}</div>
+<div class="detail"><strong>Grund der Absage:</strong> ${reasonLabel}</div>
+</div>
+
+<p>Möchten Sie zu einem anderen Zeitpunkt einen neuen Termin buchen? Über folgenden Link können Sie direkt einen passenden Slot wählen:</p>
+<div class="btn-container">
+<a href="${rebookUrl}" class="btn" target="_blank">Neuen Termin vereinbaren</a>
+</div>
+</div>
+</div>
+</body>
+</html>`;
+                    const custText = `Termin storniert\n\nHallo ${booking.customerName || 'Kunde'},\n\nIhr vereinbarter Termin wurde wie gewünscht storniert.\n\nThema: ${topicTitle}\nExperte: ${expertName}\nZeit: ${formattedDate}\nGrund: ${reasonLabel}\n\nNeuen Termin vereinbaren:\n${rebookUrl}`;
+
+                    await transporter.sendMail({
+                        from: fromAddress,
+                        to: booking.customerEmail,
+                        subject: custSubject,
+                        text: custText,
+                        html: custHtml
+                    });
+                    console.log('[MailService] Customer cancellation confirmation sent to:', booking.customerEmail);
+                }
+
+                // 2. Send notification to Expert
+                if (expertEmail && expertEmail.trim()) {
+                    const expertSubject = `✗ Termin abgesagt durch Kunde: ${topicTitle} (${booking.customerName || 'Kunde'})`;
+                    const expertHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+.container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; }
+.header { background-color: #ef4444; color: white; padding: 20px; text-align: center; border-radius: 6px 6px 0 0; }
+.content { background-color: #ffffff; padding: 20px; }
+.detail-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin: 15px 0; }
+.detail { margin: 8px 0; }
+.btn-container { text-align: center; margin: 25px 0; }
+.btn { background-color: #2563eb; color: #ffffff !important; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h2 style="margin:0;">✗ Termin durch Kunden abgesagt</h2>
+</div>
+<div class="content">
+<p>Hallo <strong>${expertName}</strong>,</p>
+<p>der Kunde <strong>${booking.customerName || 'Kunde'}</strong> hat den folgenden Termin abgesagt:</p>
+<div class="detail-box">
+<div class="detail"><strong>Thema:</strong> ${topicTitle}</div>
+<div class="detail"><strong>Kunde:</strong> ${booking.customerName || 'Nicht angegeben'}</div>
+<div class="detail"><strong>E-Mail:</strong> ${booking.customerEmail || 'Nicht angegeben'}</div>
+<div class="detail"><strong>Telefon:</strong> ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}</div>
+<div class="detail"><strong>Zeit:</strong> ${formattedDate}</div>
+<div class="detail"><strong>Ort:</strong> ${location}</div>
+<div class="detail"><strong>Grund der Absage:</strong> ${reasonLabel}</div>
+</div>
+<p>Der gebuchte Zeitslot ist automatisch wieder freigegeben worden.</p>
+<div class="btn-container">
+<a href="${appUrl}/#/dashboard/appointments" class="btn" target="_blank">Zu meinen Terminen</a>
+</div>
+</div>
+</div>
+</body>
+</html>`;
+                    const expertText = `Termin durch Kunden abgesagt\n\nHallo ${expertName},\n\nder Kunde ${booking.customerName || 'Kunde'} hat den folgenden Termin abgesagt:\n\nThema: ${topicTitle}\nKunde: ${booking.customerName || 'Nicht angegeben'}\nE-Mail: ${booking.customerEmail || 'Nicht angegeben'}\nTelefon: ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}\nZeit: ${formattedDate}\nOrt: ${location}\nGrund: ${reasonLabel}\n\nDashboard: ${appUrl}/#/dashboard/appointments`;
+
+                    await transporter.sendMail({
+                        from: fromAddress,
+                        to: expertEmail,
+                        subject: expertSubject,
+                        text: expertText,
+                        html: expertHtml
+                    });
+                    console.log('[MailService] Customer cancellation notice sent to expert:', expertEmail);
+                }
+
+            } else {
+                // Provider cancellation
+                let subject = `✗ Termin storniert: ${topicTitle}`;
+                let headline = `✗ Termin storniert`;
+                let reasonLabel = 'Absage durch Anbieter';
+                let mainMessageHtml = `<p>Der folgende Termin wurde storniert:</p>`;
+                let mainMessageText = `Der folgende Termin wurde storniert:\n\n`;
+
+                if (reasonType === 'no_show') {
+                    subject = `Terminstornierung: Sie sind nicht zum Termin erschienen (${topicTitle})`;
+                    headline = `Sie sind nicht zum Termin erschienen`;
+                    reasonLabel = `Kunde ist nicht zum Termin erschienen`;
+                    mainMessageHtml = `<p>Hallo <strong>${booking.customerName || 'Kunde'}</strong>,</p><p>Sie sind zum vereinbarten Termin am <strong>${formattedDate}</strong> leider nicht erschienen.</p>`;
+                    mainMessageText = `Hallo ${booking.customerName || 'Kunde'},\n\nSie sind zum vereinbarten Termin am ${formattedDate} leider nicht erschienen.\n\n`;
+                } else if (reasonType === 'sick') {
+                    subject = `Terminstornierung: Krankheitsbedingte Absage (${topicTitle})`;
+                    headline = `Krankheitsbedingte Absage`;
+                    reasonLabel = `Anbieter ist leider krank`;
+                    mainMessageHtml = `<p>Hallo <strong>${booking.customerName || 'Kunde'}</strong>,</p><p>der vereinbarte Termin am <strong>${formattedDate}</strong> musste leider krankheitsbedingt durch <strong>${expertName}</strong> abgesagt werden. Wir bitten die Unannehmlichkeiten zu entschuldigen.</p>`;
+                    mainMessageText = `Hallo ${booking.customerName || 'Kunde'},\n\nder vereinbarte Termin am ${formattedDate} musste leider krankheitsbedingt durch ${expertName} abgesagt werden. Wir bitten die Unannehmlichkeiten zu entschuldigen.\n\n`;
+                } else if (customReason) {
+                    subject = `Terminstornierung: ${topicTitle}`;
+                    headline = `Termin abgesagt`;
+                    reasonLabel = customReason;
+                    mainMessageHtml = `<p>Hallo <strong>${booking.customerName || 'Kunde'}</strong>,</p><p>der vereinbarte Termin am <strong>${formattedDate}</strong> wurde durch <strong>${expertName}</strong> abgesagt.</p><p><strong>Begründung:</strong> ${customReason}</p>`;
+                    mainMessageText = `Hallo ${booking.customerName || 'Kunde'},\n\nder vereinbarte Termin am ${formattedDate} wurde abgesagt.\nBegründung: ${customReason}\n\n`;
+                }
+
+                // 1. Send to Customer
+                if (booking.customerEmail && booking.customerEmail.trim()) {
+                    const custHtml = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -293,29 +474,71 @@ ${mainMessageHtml}
 </div>
 
 <p>Möchten Sie einen neuen Termin vereinbaren? Über den folgenden Link können Sie schnell und direkt einen neuen Termin buchen:</p>
-
 <div class="btn-container">
 <a href="${rebookUrl}" class="btn" target="_blank">Neuen Termin vereinbaren</a>
 </div>
-<p style="font-size: 12px; color: #64748b; text-align: center;">
-Link funktioniert nicht? Kopieren Sie folgende Adresse in Ihren Browser:<br>
-<a href="${rebookUrl}" style="color: #2563eb;">${rebookUrl}</a>
-</p>
 </div>
 </div>
 </body>
 </html>`;
+                    const custText = `${headline}\n\n${mainMessageText}Termindetails:\n- Thema: ${topicTitle}\n- Experte: ${expertName}\n- Zeit: ${formattedDate}\n- Grund/Status: ${reasonLabel}\n\nNeuen Termin vereinbaren:\n${rebookUrl}`;
 
-            const textContent = `${headline}\n\n${mainMessageText}Termindetails:\n- Thema: ${topicTitle}\n- Experte: ${expertName}\n- Zeit: ${formattedDate}\n\nNeuen Termin vereinbaren:\n${rebookUrl}`;
+                    await transporter.sendMail({
+                        from: fromAddress,
+                        to: booking.customerEmail,
+                        subject: subject,
+                        text: custText,
+                        html: custHtml
+                    });
+                    console.log('[MailService] Provider cancellation sent to customer:', booking.customerEmail);
+                }
 
-            const info = await transporter.sendMail({
-                from: fromAddress,
-                to: validRecipients,
-                subject: subject,
-                text: textContent,
-                html: htmlContent
-            });
-            console.log('[MailService] Cancellation sent:', info.messageId);
+                // 2. Send confirmation to Expert
+                if (expertEmail && expertEmail.trim()) {
+                    const expertSubject = `✓ Stornierung bestätigt: ${topicTitle} (${booking.customerName || 'Kunde'})`;
+                    const expertHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+.container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; }
+.header { background-color: #64748b; color: white; padding: 20px; text-align: center; border-radius: 6px 6px 0 0; }
+.content { background-color: #ffffff; padding: 20px; }
+.detail-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin: 15px 0; }
+.detail { margin: 8px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h2 style="margin:0;">✓ Termin storniert</h2>
+</div>
+<div class="content">
+<p>Hallo <strong>${expertName}</strong>,</p>
+<p>Sie haben den folgenden Termin storniert. Der Kunde (${booking.customerEmail}) wurde per E-Mail benachrichtigt.</p>
+<div class="detail-box">
+<div class="detail"><strong>Thema:</strong> ${topicTitle}</div>
+<div class="detail"><strong>Kunde:</strong> ${booking.customerName || 'Nicht angegeben'}</div>
+<div class="detail"><strong>Zeit:</strong> ${formattedDate}</div>
+<div class="detail"><strong>Grund/Status:</strong> ${reasonLabel}</div>
+</div>
+</div>
+</div>
+</body>
+</html>`;
+                    const expertText = `Stornierung bestätigt\n\nHallo ${expertName},\n\nSie haben folgenden Termin storniert:\n\nThema: ${topicTitle}\nKunde: ${booking.customerName || 'Nicht angegeben'} (${booking.customerEmail})\nZeit: ${formattedDate}\nGrund: ${reasonLabel}`;
+
+                    await transporter.sendMail({
+                        from: fromAddress,
+                        to: expertEmail,
+                        subject: expertSubject,
+                        text: expertText,
+                        html: expertHtml
+                    });
+                    console.log('[MailService] Cancellation confirmation sent to expert:', expertEmail);
+                }
+            }
         } catch (error) {
             console.error('[MailService] sendCancellation FAILED:', error);
         }
@@ -337,31 +560,21 @@ Link funktioniert nicht? Kopieren Sie folgende Adresse in Ihren Browser:<br>
             const expertName = fullBooking?.Provider?.displayName || 'Experte';
             const location = fullBooking?.Provider?.location || 'Keine Angabe';
             const expertEmail = fullBooking?.Provider?.email;
-
-            const recipients = [booking.customerEmail];
-            if (expertEmail) recipients.push(expertEmail);
-
-            // Filter out empty or invalid emails
-            const validRecipients = recipients.filter(email => email && email.trim() !== '');
-
-            if (validRecipients.length === 0) {
-                console.warn('[MailService] No valid recipients for reminder. Skipping.');
-                return;
-            }
-
-            console.log('[MailService] Sending reminder to:', validRecipients);
+            const customerEmail = booking.customerEmail;
 
             const formattedDate = formatGermanDate(booking.slotStartTime);
 
-            const htmlContent = `<!DOCTYPE html>
+            // 1. Send reminder to Customer
+            if (customerEmail && customerEmail.trim() !== '') {
+                const custHtml = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <style>
 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-.container { max-width: 600px; margin: 0 auto; padding: 20px; }
-.header { background-color: #FF9800; color: white; padding: 20px; text-align: center; }
-.content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+.container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; }
+.header { background-color: #FF9800; color: white; padding: 20px; text-align: center; border-radius: 6px 6px 0 0; }
+.content { background-color: #f9f9f9; padding: 20px; }
 .detail { margin: 10px 0; }
 .alert { background-color: #fff3cd; padding: 15px; border-left: 4px solid #FF9800; margin-bottom: 20px; }
 </style>
@@ -369,7 +582,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 <body>
 <div class="container">
 <div class="header">
-<h2>🔔 Terminerinnerung</h2>
+<h2 style="margin:0;">🔔 Terminerinnerung</h2>
 </div>
 <div class="content">
 <div class="alert">
@@ -387,16 +600,64 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 </body>
 </html>`;
 
-            const textContent = `🔔 Terminerinnerung\n\nIhr Termin beginnt in ${leadTime} Minuten!\n\nThema: ${topicTitle}\nExperte: ${expertName}\nZeit: ${formattedDate}\nOrt: ${location}\nName: ${booking.customerName || 'Nicht angegeben'}\nE-Mail: ${booking.customerEmail || 'Nicht angegeben'}\nTelefon: ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}`;
+                const custText = `🔔 Terminerinnerung\n\nIhr Termin beginnt in ${leadTime} Minuten!\n\nThema: ${topicTitle}\nExperte: ${expertName}\nZeit: ${formattedDate}\nOrt: ${location}\nName: ${booking.customerName || 'Nicht angegeben'}\nE-Mail: ${booking.customerEmail || 'Nicht angegeben'}\nTelefon: ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}`;
 
-            const info = await transporter.sendMail({
-                from: fromAddress,
-                to: validRecipients,
-                subject: `🔔 Erinnerung: Termin in ${leadTime} Minuten`,
-                text: textContent,
-                html: htmlContent
-            });
-            console.log('[MailService] Reminder sent:', info.messageId);
+                await transporter.sendMail({
+                    from: fromAddress,
+                    to: customerEmail,
+                    subject: `🔔 Erinnerung: Termin in ${leadTime} Minuten (${topicTitle})`,
+                    text: custText,
+                    html: custHtml
+                });
+                console.log('[MailService] Reminder sent to customer:', customerEmail);
+            }
+
+            // 2. Send reminder to Expert
+            if (expertEmail && expertEmail.trim() !== '') {
+                const expHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+.container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; }
+.header { background-color: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 6px 6px 0 0; }
+.content { background-color: #f9f9f9; padding: 20px; }
+.detail { margin: 10px 0; }
+.alert { background-color: #dbeafe; padding: 15px; border-left: 4px solid #2563eb; margin-bottom: 20px; color: #1e40af; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h2 style="margin:0;">🔔 Terminerinnerung</h2>
+</div>
+<div class="content">
+<div class="alert">
+<strong>Termin mit ${booking.customerName || 'Kunde'} beginnt in ${leadTime} Minuten!</strong>
+</div>
+<div class="detail"><strong>Thema:</strong> ${topicTitle}</div>
+<div class="detail"><strong>Kunde:</strong> ${booking.customerName || 'Nicht angegeben'}</div>
+<div class="detail"><strong>E-Mail:</strong> ${booking.customerEmail || 'Nicht angegeben'}</div>
+<div class="detail"><strong>Telefon:</strong> ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}</div>
+<div class="detail"><strong>Zeit:</strong> ${formattedDate}</div>
+<div class="detail"><strong>Ort:</strong> ${location}</div>
+</div>
+</div>
+</body>
+</html>`;
+
+                const expText = `🔔 Terminerinnerung\n\nTermin mit ${booking.customerName || 'Kunde'} beginnt in ${leadTime} Minuten!\n\nThema: ${topicTitle}\nKunde: ${booking.customerName || 'Nicht angegeben'}\nE-Mail: ${booking.customerEmail || 'Nicht angegeben'}\nTelefon: ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}\nZeit: ${formattedDate}\nOrt: ${location}`;
+
+                await transporter.sendMail({
+                    from: fromAddress,
+                    to: expertEmail,
+                    subject: `🔔 Erinnerung: Termin in ${leadTime} Minuten mit ${booking.customerName || 'Kunde'}`,
+                    text: expText,
+                    html: expHtml
+                });
+                console.log('[MailService] Reminder sent to expert:', expertEmail);
+            }
         } catch (error) {
             console.error('[MailService] sendReminder FAILED:', error);
         }
@@ -438,7 +699,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 const expertName = booking?.Provider?.displayName || 'Experte';
                 const location = booking?.Provider?.location || 'Keine Angabe';
                 const formattedDate = formatGermanDate(booking.slotStartTime);
-                const cancelUrl = `${appUrl}/#/cancel/${booking.cancellationToken}`;
+                const cancelUrl = `${appUrl}/#/cancel/${booking.cancellationToken}?role=customer`;
 
                 htmlRows += `
                     <tr>
@@ -472,7 +733,7 @@ td { padding: 12px; border-bottom: 1px solid #ddd; }
 <body>
 <div class="container">
 <div class="header">
-<h2>📅 Ihre gebuchten Termine</h2>
+<h2 style="margin:0;">📅 Ihre gebuchten Termine</h2>
 </div>
 <div class="content">
 <p>Hier finden Sie eine Übersicht Ihrer aktiven Termine:</p>

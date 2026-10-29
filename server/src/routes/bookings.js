@@ -87,7 +87,7 @@ router.post('/:id/cancel', async (req, res) => {
         booking.cancellationReason = cancellationReasonText;
         await booking.save();
 
-        await mailService.sendCancellation(booking, { reasonType, customReason }).catch(console.error);
+        await mailService.sendCancellation(booking, { reasonType, customReason, cancelledBy: 'provider' }).catch(console.error);
 
         res.json({ success: true, booking });
     } catch (err) {
