@@ -155,6 +155,8 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 <div class="detail"><strong>Zeit:</strong> ${formattedDate}</div>
 <div class="detail"><strong>Ort:</strong> ${location}</div>
 <div class="detail"><strong>Name:</strong> ${booking.customerName || 'Nicht angegeben'}</div>
+<div class="detail"><strong>E-Mail:</strong> ${booking.customerEmail || 'Nicht angegeben'}</div>
+<div class="detail"><strong>Telefon:</strong> ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}</div>
 <p style="margin-top: 20px;">Ein Kalendereintrag (iCal) ist dieser E-Mail beigefügt.</p>
 <a href="${cancelUrl}" class="button">Termin stornieren</a>
 </div>
@@ -165,7 +167,7 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 </body>
 </html>`;
 
-            const textContent = `Terminbestätigung\n\nIhr Termin wurde erfolgreich gebucht.\n\nThema: ${topicTitle}\nExperte: ${expertName}\nZeit: ${formattedDate}\nOrt: ${location}\nName: ${booking.customerName || 'Nicht angegeben'}\n\nStornieren: ${cancelUrl}`;
+            const textContent = `Terminbestätigung\n\nIhr Termin wurde erfolgreich gebucht.\n\nThema: ${topicTitle}\nExperte: ${expertName}\nZeit: ${formattedDate}\nOrt: ${location}\nName: ${booking.customerName || 'Nicht angegeben'}\nE-Mail: ${booking.customerEmail || 'Nicht angegeben'}\nTelefon: ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}\n\nStornieren: ${cancelUrl}`;
 
             const info = await transporter.sendMail({
                 from: fromAddress,
@@ -377,12 +379,15 @@ body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
 <div class="detail"><strong>Experte:</strong> ${expertName}</div>
 <div class="detail"><strong>Zeit:</strong> ${formattedDate}</div>
 <div class="detail"><strong>Ort:</strong> ${location}</div>
+<div class="detail"><strong>Name:</strong> ${booking.customerName || 'Nicht angegeben'}</div>
+<div class="detail"><strong>E-Mail:</strong> ${booking.customerEmail || 'Nicht angegeben'}</div>
+<div class="detail"><strong>Telefon:</strong> ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}</div>
 </div>
 </div>
 </body>
 </html>`;
 
-            const textContent = `🔔 Terminerinnerung\n\nIhr Termin beginnt in ${leadTime} Minuten!\n\nThema: ${topicTitle}\nExperte: ${expertName}\nZeit: ${formattedDate}\nOrt: ${location}`;
+            const textContent = `🔔 Terminerinnerung\n\nIhr Termin beginnt in ${leadTime} Minuten!\n\nThema: ${topicTitle}\nExperte: ${expertName}\nZeit: ${formattedDate}\nOrt: ${location}\nName: ${booking.customerName || 'Nicht angegeben'}\nE-Mail: ${booking.customerEmail || 'Nicht angegeben'}\nTelefon: ${(booking.customerPhone && booking.customerPhone.trim()) ? booking.customerPhone.trim() : 'Keine Angabe'}`;
 
             const info = await transporter.sendMail({
                 from: fromAddress,

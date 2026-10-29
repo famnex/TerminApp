@@ -323,6 +323,9 @@ router.post('/smtp-test', async (req, res) => {
                             <div><strong>Experte:</strong> Max Mustermann</div>
                             <div><strong>Zeit:</strong> Montag, 15. September 2026, 10:00 Uhr</div>
                             <div><strong>Ort:</strong> Raum 101</div>
+                            <div><strong>Name:</strong> Max Mustermann (Test)</div>
+                            <div><strong>E-Mail:</strong> ${recipient}</div>
+                            <div><strong>Telefon:</strong> +49 123 456789</div>
                         </div>
                     </div>
                 </div>
@@ -398,7 +401,7 @@ router.post('/smtp-test', async (req, res) => {
             </body></html>`;
         } else if (type === 'reminder') {
             subject = "🔔 Test-Terminerinnerung: Strategiegespräch (Test) in 10 Minuten";
-            text = `Test-Terminerinnerung\n\nIhr Termin beginnt in 10 Minuten!\n\nThema: Strategiegespräch (Test)\nExperte: Max Mustermann\nZeit: Montag, 15. September 2026, 10:00 Uhr`;
+            text = `Test-Terminerinnerung\n\nIhr Termin beginnt in 10 Minuten!\n\nThema: Strategiegespräch (Test)\nExperte: Max Mustermann\nZeit: Montag, 15. September 2026, 10:00 Uhr\nOrt: Raum 101\nName: Test-Kunde\nE-Mail: ${recipient}\nTelefon: +49 123 456789`;
             html = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif; padding: 20px;">
                 <div style="max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
                     <div style="background-color: #f59e0b; color: white; padding: 20px; text-align: center;">
@@ -411,6 +414,10 @@ router.post('/smtp-test', async (req, res) => {
                             <div><strong>Thema:</strong> Strategiegespräch (Test)</div>
                             <div><strong>Experte:</strong> Max Mustermann</div>
                             <div><strong>Zeit:</strong> Montag, 15. September 2026, 10:00 Uhr</div>
+                            <div><strong>Ort:</strong> Raum 101</div>
+                            <div><strong>Name:</strong> Test-Kunde</div>
+                            <div><strong>E-Mail:</strong> ${recipient}</div>
+                            <div><strong>Telefon:</strong> +49 123 456789</div>
                         </div>
                     </div>
                 </div>
