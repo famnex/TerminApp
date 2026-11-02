@@ -141,9 +141,11 @@ Für Administratoren gibt es mächtige Werkzeuge, um Einstellungen und Termine f
 *   **Standard-Themen:** Weise neuen Benutzern automatisch Standard-Themen zu (z.B. "Sprechstunde, 30 Minuten").
 *   **Automatisches Anwenden:** Aktiviere "Auf zukünftige Benutzer anwenden". Sobald sich ein neuer Benutzer (z.B. via LDAP oder SSO) das erste Mal anmeldet, erhält er diese Themen und Schichten automatisch zugewiesen.
 
-### Benutzerverwaltung (Suche & Sortierung):
+### Benutzerverwaltung (Terminstatistiken, Suche & Sortierung):
+*   **Terminübersicht pro Benutzer:** In der Benutzerliste wird für jeden Mitarbeiter direkt angezeigt, wie viele Termine über dieses System gebucht wurden (inkl. Aufschlüsselung nach stattgefunden/vergangen, anstehend und storniert).
+*   **Detail-Drilldown:** Ein Klick auf die Terminzahl öffnet ein Übersichtsfenster mit KPI-Karten und einer vollständigen Liste aller Termine des Nutzers (Datum, Uhrzeit, Thema, Kundendaten, Status).
 *   Die Benutzerliste ist standardmäßig **alphabetisch nach Anzeigename** sortiert.
-*   Über das integrierte **Suchfeld** kann in Echtzeit nach Name, Benutzername, E-Mail-Adresse, Position/Funktion oder Abteilungszugehörigkeit gefiltert werden.
+*   Über das integrierte **Suchfeld** kann in Echtzeit nach Name, Benutzername, E-Mail-Adresse, Position/Funktion, Abteilungszugehörigkeit oder Terminstatus gefiltert werden.
 
 ---
 

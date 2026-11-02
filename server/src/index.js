@@ -119,6 +119,13 @@ sequelize.sync().then(async () => {
         // Safe to ignore
     }
 
+    try {
+        await sequelize.query("UPDATE Bookings SET providerId = (SELECT userId FROM Topics WHERE Topics.id = Bookings.topicId) WHERE providerId IS NULL AND topicId IS NOT NULL");
+        console.log('Database upgrade: Populated missing providerId in Bookings table');
+    } catch (dbErr) {
+        // Safe to ignore
+    }
+
     // Start Jobs
     const startReminderJob = require('./jobs/reminders');
     startReminderJob();

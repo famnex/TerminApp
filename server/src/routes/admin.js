@@ -1,24 +1,85 @@
 const express = require('express');
 const router = express.Router();
-const { GlobalSettings, User, BatchConfig, Topic, Availability, Department } = require('../models');
+const { GlobalSettings, User, BatchConfig, Topic, Availability, Department, Booking } = require('../models');
 const { requireAdmin } = require('../middleware/auth');
 
 // Apply requireAdmin middleware to all routes in this router
 // Note: authenticateToken is already applied in index.js for /api/admin
 router.use(requireAdmin);
 
-// GET All Users (For user management - sorted alphabetically)
+// GET All Users (For user management - sorted alphabetically with booking statistics)
 router.get('/users', async (req, res) => {
     try {
         const users = await User.findAll({
             attributes: ['id', 'username', 'displayName', 'email', 'isAdmin', 'authMethod', 'position', 'location', 'locationType', 'profileImage', 'showEmail', 'bookingPageActive'],
             include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
         });
-        users.sort((a, b) => 
+
+        // Ensure missing providerId is populated in Bookings
+        await Booking.sequelize.query("UPDATE Bookings SET providerId = (SELECT userId FROM Topics WHERE Topics.id = Bookings.topicId) WHERE providerId IS NULL AND topicId IS NOT NULL").catch(() => {});
+
+        // Fetch all bookings with topics to compute stats
+        const allBookings = await Booking.findAll({
+            attributes: ['id', 'providerId', 'topicId', 'slotStartTime', 'slotEndTime', 'status', 'isArchived'],
+            include: [{ model: Topic, attributes: ['id', 'userId'] }]
+        });
+
+        const now = new Date();
+
+        const userList = users.map(u => {
+            const uJson = u.toJSON();
+            const userBookings = allBookings.filter(b => {
+                const effProviderId = b.providerId || (b.Topic ? b.Topic.userId : null);
+                return effProviderId === u.id;
+            });
+
+            const total = userBookings.length;
+            const past = userBookings.filter(b => b.status === 'confirmed' && new Date(b.slotStartTime) < now).length;
+            const upcoming = userBookings.filter(b => b.status === 'confirmed' && new Date(b.slotStartTime) >= now).length;
+            const cancelled = userBookings.filter(b => b.status === 'cancelled').length;
+
+            uJson.bookingStats = {
+                total,
+                past,
+                upcoming,
+                cancelled
+            };
+            return uJson;
+        });
+
+        userList.sort((a, b) => 
             (a.displayName || '').localeCompare(b.displayName || '', 'de', { sensitivity: 'base' }) ||
             (a.username || '').localeCompare(b.username || '', 'de', { sensitivity: 'base' })
         );
-        res.json(users);
+        res.json(userList);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/admin/users/:id/bookings - Detailed bookings for a user
+router.get('/users/:id/bookings', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { Op } = require('sequelize');
+
+        const topics = await Topic.findAll({ where: { userId: id }, attributes: ['id'] });
+        const topicIds = topics.map(t => t.id);
+
+        const bookings = await Booking.findAll({
+            where: {
+                [Op.or]: [
+                    { providerId: id },
+                    ...(topicIds.length > 0 ? [{ topicId: topicIds }] : [])
+                ]
+            },
+            include: [
+                { model: Topic, attributes: ['id', 'title', 'durationMinutes', 'description'] }
+            ],
+            order: [['slotStartTime', 'DESC']]
+        });
+
+        res.json(bookings);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

@@ -20,7 +20,9 @@ import {
     TableRow,
 } from "../components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Building2, Users as UsersIcon, Star, GitMerge, AlertTriangle, Loader2, Search, X } from 'lucide-react';
+import { Building2, Users as UsersIcon, Star, GitMerge, AlertTriangle, Loader2, Search, X, Calendar, Clock, CheckCircle2, Phone } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { de } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 const AdminUserList = () => {
@@ -38,6 +40,31 @@ const AdminUserList = () => {
     const [duplicateGroups, setDuplicateGroups] = useState([]);
     const [merging, setMerging] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedUserForBookings, setSelectedUserForBookings] = useState(null);
+    const [userBookings, setUserBookings] = useState([]);
+    const [loadingUserBookings, setLoadingUserBookings] = useState(false);
+    const [bookingStatusFilter, setBookingStatusFilter] = useState('all'); // 'all', 'past', 'upcoming', 'cancelled'
+
+    const openUserBookingsModal = async (u) => {
+        setSelectedUserForBookings(u);
+        setLoadingUserBookings(true);
+        setBookingStatusFilter('all');
+        try {
+            const res = await api.get(`/admin/users/${u.id}/bookings`);
+            setUserBookings(res.data);
+        } catch (err) {
+            console.error('Failed to load user bookings', err);
+            toast.error('Fehler beim Laden der Termine');
+            setUserBookings([]);
+        } finally {
+            setLoadingUserBookings(false);
+        }
+    };
+
+    const closeUserBookingsModal = () => {
+        setSelectedUserForBookings(null);
+        setUserBookings([]);
+    };
 
     // Department Form State
     const [deptFormData, setDeptFormData] = useState({
@@ -301,7 +328,13 @@ const AdminUserList = () => {
             const matchesEmail = (u.email || '').toLowerCase().includes(term);
             const matchesPosition = (u.position || '').toLowerCase().includes(term);
             const matchesDept = u.Departments && u.Departments.some(d => (d.name || '').toLowerCase().includes(term));
-            return matchesName || matchesUsername || matchesEmail || matchesPosition || matchesDept;
+            const totalBookings = u.bookingStats?.total || 0;
+            const matchesBookings = (term === 'termine' || term === 'termin') 
+                ? totalBookings > 0 
+                : (term === 'keine termine' || term === '0 termine') 
+                    ? totalBookings === 0 
+                    : (totalBookings.toString() + ' termine').includes(term);
+            return matchesName || matchesUsername || matchesEmail || matchesPosition || matchesDept || matchesBookings;
         })
         .sort((a, b) => 
             (a.displayName || '').localeCompare(b.displayName || '', 'de', { sensitivity: 'base' }) ||
@@ -437,11 +470,12 @@ const AdminUserList = () => {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[300px]">Benutzer</TableHead>
+                                        <TableHead className="w-[280px]">Benutzer</TableHead>
                                         <TableHead>Email</TableHead>
                                         <TableHead>Rolle</TableHead>
                                         <TableHead>Auth Methode</TableHead>
                                         <TableHead>Buchungsseite</TableHead>
+                                        <TableHead>Termine</TableHead>
                                         <TableHead className="text-right">Aktionen</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -496,6 +530,36 @@ const AdminUserList = () => {
                                                     </span>
                                                 )}
                                             </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    {u.bookingStats?.total > 0 ? (
+                                                        <div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openUserBookingsModal(u)}
+                                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors cursor-pointer group-hover:border-blue-300"
+                                                                title="Klicken für Termindetails"
+                                                            >
+                                                                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                                                                <span>{u.bookingStats.total} {u.bookingStats.total === 1 ? 'Termin' : 'Termine'}</span>
+                                                            </button>
+                                                            <div className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-1 mt-1 pl-0.5">
+                                                                <span className="text-emerald-700 font-medium">{u.bookingStats.past} stattgefunden</span>
+                                                                {u.bookingStats.upcoming > 0 && (
+                                                                    <span>· <span className="text-blue-700 font-medium">{u.bookingStats.upcoming} anstehend</span></span>
+                                                                )}
+                                                                {u.bookingStats.cancelled > 0 && (
+                                                                    <span>· <span className="text-amber-700">{u.bookingStats.cancelled} storniert</span></span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs text-muted-foreground bg-slate-50 border border-slate-200 w-fit">
+                                                            0 Termine
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <Button variant="ghost" size="icon" onClick={() => openEditModal(u)}>
@@ -526,7 +590,7 @@ const AdminUserList = () => {
                                     ))}
                                 {filteredUsers.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                                            <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                                                 {searchTerm ? (
                                                     <div className="space-y-2">
                                                         <p>Keine Benutzer für die Suche <strong>"{searchTerm}"</strong> gefunden.</p>
@@ -728,6 +792,146 @@ const AdminUserList = () => {
                                 <Button type="submit">Erstellen</Button>
                             </CardFooter>
                         </form>
+                    </Card>
+                </div>
+            )}
+
+            {/* USER BOOKINGS MODAL */}
+            {selectedUserForBookings && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in zoom-in duration-200">
+                    <Card className="w-full max-w-3xl shadow-2xl max-h-[90vh] flex flex-col">
+                        <CardHeader className="border-b pb-4 shrink-0">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <CardTitle className="text-xl flex items-center gap-2">
+                                        <Calendar className="h-5 w-5 text-primary" />
+                                        Termine von {selectedUserForBookings.displayName}
+                                    </CardTitle>
+                                    <CardDescription className="mt-1">
+                                        @{selectedUserForBookings.username} {selectedUserForBookings.email && `· ${selectedUserForBookings.email}`}
+                                    </CardDescription>
+                                </div>
+                                <Button variant="ghost" size="icon" onClick={closeUserBookingsModal}>
+                                    <X className="h-5 w-5" />
+                                </Button>
+                            </div>
+
+                            {/* KPI Metrics */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3">
+                                <div 
+                                    onClick={() => setBookingStatusFilter('all')}
+                                    className={`p-2.5 rounded-lg border text-center cursor-pointer transition-all ${bookingStatusFilter === 'all' ? 'bg-primary/10 border-primary ring-1 ring-primary' : 'bg-muted/40 hover:bg-muted'}`}
+                                >
+                                    <div className="text-xs text-muted-foreground">Gesamt</div>
+                                    <div className="text-lg font-bold text-foreground">{selectedUserForBookings.bookingStats?.total || 0}</div>
+                                </div>
+                                <div 
+                                    onClick={() => setBookingStatusFilter('past')}
+                                    className={`p-2.5 rounded-lg border text-center cursor-pointer transition-all ${bookingStatusFilter === 'past' ? 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500' : 'bg-muted/40 hover:bg-muted'}`}
+                                >
+                                    <div className="text-xs text-muted-foreground">Stattgefunden</div>
+                                    <div className="text-lg font-bold text-emerald-700">{selectedUserForBookings.bookingStats?.past || 0}</div>
+                                </div>
+                                <div 
+                                    onClick={() => setBookingStatusFilter('upcoming')}
+                                    className={`p-2.5 rounded-lg border text-center cursor-pointer transition-all ${bookingStatusFilter === 'upcoming' ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-muted/40 hover:bg-muted'}`}
+                                >
+                                    <div className="text-xs text-muted-foreground">Anstehend</div>
+                                    <div className="text-lg font-bold text-blue-700">{selectedUserForBookings.bookingStats?.upcoming || 0}</div>
+                                </div>
+                                <div 
+                                    onClick={() => setBookingStatusFilter('cancelled')}
+                                    className={`p-2.5 rounded-lg border text-center cursor-pointer transition-all ${bookingStatusFilter === 'cancelled' ? 'bg-amber-50 border-amber-500 ring-1 ring-amber-500' : 'bg-muted/40 hover:bg-muted'}`}
+                                >
+                                    <div className="text-xs text-muted-foreground">Storniert</div>
+                                    <div className="text-lg font-bold text-amber-700">{selectedUserForBookings.bookingStats?.cancelled || 0}</div>
+                                </div>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent className="p-0 overflow-y-auto flex-1">
+                            {loadingUserBookings ? (
+                                <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+                                    <Loader2 className="h-8 w-8 animate-spin mb-2 text-primary" />
+                                    <p className="text-sm">Termine werden geladen...</p>
+                                </div>
+                            ) : userBookings.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+                                    <Calendar className="h-10 w-10 text-muted-foreground/40 mb-2" />
+                                    <p className="font-medium text-foreground">Keine Termine vorhanden</p>
+                                    <p className="text-xs mt-1">Über dieses System wurden für diesen Benutzer noch keine Termine gebucht.</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y">
+                                    {userBookings
+                                        .filter(b => {
+                                            if (bookingStatusFilter === 'all') return true;
+                                            if (bookingStatusFilter === 'cancelled') return b.status === 'cancelled';
+                                            const isPast = new Date(b.slotStartTime) < new Date();
+                                            if (bookingStatusFilter === 'past') return b.status === 'confirmed' && isPast;
+                                            if (bookingStatusFilter === 'upcoming') return b.status === 'confirmed' && !isPast;
+                                            return true;
+                                        })
+                                        .map(b => {
+                                            const isPast = new Date(b.slotStartTime) < new Date();
+                                            const isCancelled = b.status === 'cancelled';
+                                            return (
+                                                <div key={b.id} className="p-4 hover:bg-muted/20 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-semibold text-foreground">
+                                                                {b.Topic?.title || 'Termin'}
+                                                            </span>
+                                                            {isCancelled ? (
+                                                                <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-100 text-red-800 border border-red-200">
+                                                                    Storniert
+                                                                </span>
+                                                            ) : isPast ? (
+                                                                <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                                    Stattgefunden
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                                                    Anstehend
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                                            <span className="flex items-center gap-1">
+                                                                <Calendar className="h-3.5 w-3.5 text-primary" />
+                                                                {format(parseISO(b.slotStartTime), "EEEE, d. MMMM yyyy 'um' HH:mm 'Uhr'", { locale: de })}
+                                                            </span>
+                                                            {b.Topic?.durationMinutes && (
+                                                                <span className="flex items-center gap-1">
+                                                                    <Clock className="h-3.5 w-3.5" />
+                                                                    {b.Topic.durationMinutes} Min.
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {isCancelled && b.cancellationReason && (
+                                                            <div className="text-xs text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200 inline-block mt-1">
+                                                                Grund: {b.cancellationReason}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="text-xs sm:text-right text-muted-foreground bg-muted/40 sm:bg-transparent p-2 sm:p-0 rounded">
+                                                        <div className="font-medium text-foreground">{b.customerName || 'Kunde unbenannt'}</div>
+                                                        {b.customerEmail && <div className="text-muted-foreground">{b.customerEmail}</div>}
+                                                        {b.customerPhone && <div className="text-muted-foreground">{b.customerPhone}</div>}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                </div>
+                            )}
+                        </CardContent>
+
+                        <CardFooter className="border-t p-3 justify-end shrink-0">
+                            <Button variant="outline" onClick={closeUserBookingsModal}>
+                                Schließen
+                            </Button>
+                        </CardFooter>
                     </Card>
                 </div>
             )}
