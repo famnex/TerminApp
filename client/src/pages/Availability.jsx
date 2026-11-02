@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import { Calendar as CalendarIcon, Clock, Plus, Trash2, Edit2, ChevronLeft, Repeat, CalendarDays, AlertCircle, CalendarOff, Palmtree, Tag, Globe, Lock } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Trash2, Edit2, ChevronLeft, Repeat, CalendarDays, AlertCircle, CalendarOff, Palmtree, Tag, Globe, Lock, History, EyeOff } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -22,6 +22,7 @@ const Availability = () => {
     const [timeOffs, setTimeOffs] = useState([]);
     const [userTopics, setUserTopics] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [includePastTimeOffs, setIncludePastTimeOffs] = useState(false);
 
     // UI State
     const [activeTab, setActiveTab] = useState('weekly'); // weekly, rotating, specific, absences
@@ -68,7 +69,7 @@ const Availability = () => {
         try {
             const [availRes, timeOffRes, topicRes] = await Promise.all([
                 api.get('/availability/mine'),
-                api.get('/timeoff/mine'),
+                api.get('/timeoff/mine?includePast=true'),
                 api.get('/topics/mine')
             ]);
             setAvailabilities(availRes.data);
@@ -412,96 +413,160 @@ const Availability = () => {
                 )}
 
                 {/* ABSENCES VIEW */}
-                {activeTab === 'absences' && (
-                    <div className="p-8 space-y-6">
-                        <div className="flex justify-between items-center">
-                            <CardTitle className="text-lg">Geplante Abwesenheiten</CardTitle>
-                            <Button onClick={() => openModal('time_off')} className="gap-2">
-                                <Plus size={16} /> Abwesenheit hinzufügen
-                            </Button>
-                        </div>
-                        <p className="text-sm text-muted-foreground">Blockieren Sie Tage für Urlaub, Krankheit oder sonstige Abwesenheiten. Diese Tage sind nicht buchbar.</p>
+                {activeTab === 'absences' && (() => {
+                    const todayStr = format(new Date(), 'yyyy-MM-dd');
+                    const activeTimeOffs = timeOffs.filter(toff => toff.endDate >= todayStr);
+                    const pastTimeOffs = timeOffs.filter(toff => toff.endDate < todayStr);
+                    const displayedTimeOffs = includePastTimeOffs ? timeOffs : activeTimeOffs;
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {timeOffs.map(toff => {
-                                const isGlobal = toff.userId === null;
-                                const canDelete = !isGlobal || user?.isAdmin;
-
-                                return (
-                                    <Card 
-                                        key={toff.id} 
-                                        className={cn(
-                                            "group transition-all shadow-sm relative overflow-hidden",
-                                            isGlobal ? "border-amber-300 bg-amber-50/20 hover:border-amber-400" : "border-border hover:border-destructive/30"
-                                        )}
-                                    >
-                                        <div className={cn(
-                                            "absolute left-0 top-0 bottom-0 w-1 transition-colors",
-                                            isGlobal ? "bg-amber-500" : "bg-destructive/60 group-hover:bg-destructive"
-                                        )} />
-                                        <CardContent className="p-5 pl-7">
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <div className={cn(
-                                                        "flex items-center gap-1.5 font-medium mb-1 text-sm",
-                                                        isGlobal ? "text-amber-800" : "text-destructive"
-                                                    )}>
-                                                        {isGlobal ? <Globe size={15} className="text-amber-600" /> : <CalendarOff size={15} />}
-                                                        {isGlobal ? "Zentrale Abwesenheit (Für alle)" : "Persönlich abwesend"}
-                                                    </div>
-                                                    <div className="font-bold text-lg text-foreground">
-                                                        {format(parseISO(toff.startDate), 'dd.MM.yyyy')}
-                                                        {toff.startDate !== toff.endDate && (
-                                                            <>
-                                                                <span className="mx-2 text-muted-foreground font-light">-</span>
-                                                                {format(parseISO(toff.endDate), 'dd.MM.yyyy')}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                    {toff.reason && (
-                                                        <div className="text-sm text-muted-foreground mt-2 italic">
-                                                            "{toff.reason}"
-                                                        </div>
-                                                    )}
-                                                    {isGlobal && (
-                                                        <div className="text-xs text-amber-700/90 mt-2 font-medium">
-                                                            Organisationsweit für alle Anbieter blockiert
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    {canDelete ? (
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="icon" 
-                                                            className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" 
-                                                            onClick={() => deleteTimeOff(toff.id)}
-                                                            title={isGlobal ? "Zentrale Abwesenheit löschen" : "Abwesenheit löschen"}
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </Button>
-                                                    ) : (
-                                                        <span title="Zentrale Abwesenheit (kann nur von Administratoren verwaltet werden)" className="text-muted-foreground/60 p-1 block">
-                                                            <Lock size={14} />
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
-                            {timeOffs.length === 0 && (
-                                <div className="col-span-full py-16 text-center border-2 border-dashed border-muted rounded-xl bg-muted/20">
-                                    <p className="text-muted-foreground">Keine Abwesenheiten geplant.</p>
-                                    <Button variant="link" className="mt-2 text-primary" onClick={() => openModal('time_off')}>
-                                        Jetzt Abwesenheit eintragen
+                    return (
+                        <div className="p-8 space-y-6">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <div>
+                                    <CardTitle className="text-lg">Geplante Abwesenheiten</CardTitle>
+                                    <p className="text-sm text-muted-foreground mt-1">Blockieren Sie Tage für Urlaub, Krankheit oder sonstige Abwesenheiten. Diese Tage sind nicht buchbar.</p>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {pastTimeOffs.length > 0 && (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => setIncludePastTimeOffs(!includePastTimeOffs)}
+                                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 h-9"
+                                        >
+                                            {includePastTimeOffs ? (
+                                                <>
+                                                    <EyeOff size={14} /> Vergangene ausblenden
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <History size={14} /> {pastTimeOffs.length} vergangene anzeigen
+                                                </>
+                                            )}
+                                        </Button>
+                                    )}
+                                    <Button onClick={() => openModal('time_off')} className="gap-2 h-9">
+                                        <Plus size={16} /> Abwesenheit hinzufügen
                                     </Button>
                                 </div>
-                            )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {displayedTimeOffs.map(toff => {
+                                    const isGlobal = toff.userId === null;
+                                    const canDelete = !isGlobal || user?.isAdmin;
+                                    const isPast = toff.endDate < todayStr;
+
+                                    return (
+                                        <Card 
+                                            key={toff.id} 
+                                            className={cn(
+                                                "group transition-all shadow-sm relative overflow-hidden",
+                                                isPast 
+                                                    ? "border-slate-200 bg-slate-50/70 opacity-75" 
+                                                    : isGlobal 
+                                                        ? "border-amber-300 bg-amber-50/20 hover:border-amber-400" 
+                                                        : "border-border hover:border-destructive/30"
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "absolute left-0 top-0 bottom-0 w-1 transition-colors",
+                                                isPast 
+                                                    ? "bg-slate-400" 
+                                                    : isGlobal 
+                                                        ? "bg-amber-500" 
+                                                        : "bg-destructive/60 group-hover:bg-destructive"
+                                            )} />
+                                            <CardContent className="p-5 pl-7">
+                                                <div className="flex items-start justify-between">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                            <div className={cn(
+                                                                "flex items-center gap-1.5 font-medium text-sm",
+                                                                isGlobal ? "text-amber-800" : isPast ? "text-slate-600" : "text-destructive"
+                                                            )}>
+                                                                {isGlobal ? <Globe size={15} className="text-amber-600" /> : <CalendarOff size={15} />}
+                                                                {isGlobal ? "Zentrale Abwesenheit (Für alle)" : "Persönlich abwesend"}
+                                                            </div>
+                                                            {isPast && (
+                                                                <span className="text-[10px] font-semibold uppercase tracking-wider bg-slate-200/80 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300">
+                                                                    Vergangen
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className={cn(
+                                                            "font-bold text-lg",
+                                                            isPast ? "text-muted-foreground" : "text-foreground"
+                                                        )}>
+                                                            {format(parseISO(toff.startDate), 'dd.MM.yyyy')}
+                                                            {toff.startDate !== toff.endDate && (
+                                                                <>
+                                                                    <span className="mx-2 text-muted-foreground font-light">-</span>
+                                                                    {format(parseISO(toff.endDate), 'dd.MM.yyyy')}
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        {toff.reason && (
+                                                            <div className="text-sm text-muted-foreground mt-2 italic">
+                                                                "{toff.reason}"
+                                                            </div>
+                                                        )}
+                                                        {isGlobal && (
+                                                            <div className="text-xs text-amber-700/90 mt-2 font-medium">
+                                                                Organisationsweit für alle Anbieter blockiert
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        {canDelete ? (
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" 
+                                                                onClick={() => deleteTimeOff(toff.id)}
+                                                                title={isGlobal ? "Zentrale Abwesenheit löschen" : "Abwesenheit löschen"}
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </Button>
+                                                        ) : (
+                                                            <span title="Zentrale Abwesenheit (kann nur von Administratoren verwaltet werden)" className="text-muted-foreground/60 p-1 block">
+                                                                <Lock size={14} />
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
+                                {displayedTimeOffs.length === 0 && (
+                                    <div className="col-span-full py-16 text-center border-2 border-dashed border-muted rounded-xl bg-muted/20">
+                                        <p className="text-muted-foreground">
+                                            {timeOffs.length > 0 && pastTimeOffs.length > 0 
+                                                ? "Keine aktuellen oder zukünftigen Abwesenheiten geplant." 
+                                                : "Keine Abwesenheiten geplant."}
+                                        </p>
+                                        {pastTimeOffs.length > 0 && !includePastTimeOffs && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                ({pastTimeOffs.length} vergangene {pastTimeOffs.length === 1 ? 'Abwesenheit ist' : 'Abwesenheiten sind'} ausgeblendet)
+                                            </p>
+                                        )}
+                                        <div className="flex justify-center items-center gap-3 mt-3">
+                                            {pastTimeOffs.length > 0 && !includePastTimeOffs && (
+                                                <Button variant="outline" size="sm" onClick={() => setIncludePastTimeOffs(true)}>
+                                                    <History size={14} className="mr-1.5" /> Vergangene anzeigen
+                                                </Button>
+                                            )}
+                                            <Button variant="link" size="sm" className="text-primary" onClick={() => openModal('time_off')}>
+                                                Jetzt Abwesenheit eintragen
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
             </Card>
 
             {/* DIALOG MODAL */}

@@ -135,6 +135,7 @@ Für Administratoren gibt es mächtige Werkzeuge, um Einstellungen und Termine f
 *   **Wirkung:** An den festgelegten Tagen (z. B. Schulferien, Schließtage, Feiertage, pädagogische Tage) können im Buchungssystem bei **keinem** Anbieter Termine gebucht werden.
 *   In der Übersicht sind diese Einträge mit einem Badge *„Zentrale Abwesenheit (Für alle)“* hervorgehoben.
 *   Normale Anbieter sehen diese Tage als organisationsweit blockiert (nicht löschbar), Administratoren können sie jederzeit bearbeiten oder löschen.
+*   **Automatisches Ausblenden vergangener Abwesenheiten:** Abwesenheiten (sowohl persönliche als auch zentrale), deren Enddatum bereits vollständig in der Vergangenheit liegt, werden in der Übersicht standardmäßig ausgeblendet. Über den Button *„Vergangene anzeigen“* können sie bei Bedarf jederzeit wieder eingeblendet werden.
 
 ### Sammelverarbeitung (Batch-Prozesse):
 *   **Einheitliche Verfügbarkeiten:** Erstelle eine Schicht (z.B. "Elternsprechtag am Freitag von 14:00 - 17:00 Uhr") und weise sie allen Benutzern oder einer kompletten Abteilung (z.B. "Fachbereich Englisch") mit einem Klick zu.

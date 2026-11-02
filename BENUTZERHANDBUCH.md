@@ -75,6 +75,11 @@ Ideal, wenn sich deine Sprechzeiten alle zwei Wochen ändern (z. B. bei wechseln
 
 *Tipp: Du kannst Regeln mit einem "Gültig bis"-Datum versehen, damit sie beispielsweise nach dem aktuellen Schulhalbjahr automatisch auslaufen.*
 
+### Abwesenheiten & Urlaub:
+Unter dem Reiter **Abwesenheiten** kannst du Zeiten blockieren, an denen du nicht verfügbar bist (z. B. Urlaub, Fortbildung oder Krankheit).
+*   Abwesenheiten, die bereits komplett in der Vergangenheit liegen, werden zur besseren Übersicht automatisch ausgeblendet.
+*   Über den Button **„Vergangene anzeigen“** kannst du dir bei Bedarf auch vergangene Abwesenheiten jederzeit wieder anzeigen lassen.
+
 ---
 
 ## Artikel 5: Termine einsehen und verwalten

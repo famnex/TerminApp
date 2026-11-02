@@ -4,16 +4,33 @@ const { TimeOff } = require('../models');
 const { Op } = require('sequelize');
 
 // GET /api/timeoff/mine (Returns personal time-offs and central/global time-offs)
+// Hides completely past time-offs by default unless includePast=true is specified
 router.get('/mine', async (req, res) => {
     try {
         const userId = req.user.id;
+        const includePast = req.query.includePast === 'true';
+
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        const whereClause = {
+            [Op.or]: [
+                { userId },
+                { userId: null }
+            ]
+        };
+
+        if (!includePast) {
+            whereClause.endDate = {
+                [Op.gte]: todayStr
+            };
+        }
+
         const timeOffs = await TimeOff.findAll({
-            where: {
-                [Op.or]: [
-                    { userId },
-                    { userId: null }
-                ]
-            },
+            where: whereClause,
             order: [['startDate', 'ASC']]
         });
         res.json(timeOffs);
