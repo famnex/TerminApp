@@ -23,6 +23,7 @@ const Availability = () => {
     const [userTopics, setUserTopics] = useState([]);
     const [loading, setLoading] = useState(true);
     const [includePastTimeOffs, setIncludePastTimeOffs] = useState(false);
+    const [includePastSpecificDates, setIncludePastSpecificDates] = useState(false);
 
     // UI State
     const [activeTab, setActiveTab] = useState('weekly'); // weekly, rotating, specific, absences
@@ -68,7 +69,7 @@ const Availability = () => {
         setLoading(true);
         try {
             const [availRes, timeOffRes, topicRes] = await Promise.all([
-                api.get('/availability/mine'),
+                api.get('/availability/mine?includePast=true'),
                 api.get('/timeoff/mine?includePast=true'),
                 api.get('/topics/mine')
             ]);
@@ -347,70 +348,144 @@ const Availability = () => {
                 )}
 
                 {/* SPECIFIC DATES VIEW */}
-                {activeTab === 'specific' && (
-                    <div className="p-8 space-y-6">
-                        <div className="flex justify-between items-center">
-                            <CardTitle className="text-lg">Spezielle Verfügbarkeiten</CardTitle>
-                            <Button onClick={() => openModal('specific_date')} className="gap-2">
-                                <Plus size={16} /> Datum hinzufügen
-                            </Button>
-                        </div>
-                        <p className="text-sm text-muted-foreground">Fügen Sie hier spezielle Verfügbarkeiten für einzelne Tage hinzu, die von den regelmäßigen Zeiten abweichen.</p>
+                {activeTab === 'specific' && (() => {
+                    const todayStr = format(new Date(), 'yyyy-MM-dd');
+                    const allSpecific = availabilities.filter(a => a.type === 'specific_date');
+                    const activeSpecific = allSpecific.filter(a => a.specificDate >= todayStr);
+                    const pastSpecific = allSpecific.filter(a => a.specificDate < todayStr);
+                    const displayedSpecific = includePastSpecificDates ? allSpecific : activeSpecific;
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {availabilities.filter(a => a.type === 'specific_date').map(slot => (
-                                <Card key={slot.id} className="group border-border hover:border-primary/30 transition-colors shadow-sm relative overflow-hidden">
-                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/60 group-hover:bg-primary transition-colors"></div>
-                                    <CardContent className="p-5 pl-7">
-                                        <div className="flex items-center gap-2 font-medium mb-2">
-                                            <CalendarIcon size={16} className="text-primary" />
-                                            {format(parseISO(slot.specificDate), 'dd. MMMM yyyy', { locale: de })}
-                                        </div>
-                                        <div className="flex items-center gap-2 text-2xl font-bold">
-                                            {slot.startTime} <span className="text-muted-foreground/40 font-light">-</span> {slot.endTime}
-                                        </div>
-
-                                        {/* TOPIC BADGES */}
-                                        <div className="mt-3">
-                                            {(!slot.Topics || slot.Topics.length === 0) ? (
-                                                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">Alle Themen</span>
+                    return (
+                        <div className="p-8 space-y-6">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <div>
+                                    <CardTitle className="text-lg">Spezielle Verfügbarkeiten</CardTitle>
+                                    <p className="text-sm text-muted-foreground mt-1">Fügen Sie hier spezielle Verfügbarkeiten für einzelne Tage hinzu, die von den regelmäßigen Zeiten abweichen.</p>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {pastSpecific.length > 0 && (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => setIncludePastSpecificDates(!includePastSpecificDates)}
+                                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 h-9"
+                                        >
+                                            {includePastSpecificDates ? (
+                                                <>
+                                                    <EyeOff size={14} /> Vergangene ausblenden
+                                                </>
                                             ) : (
-                                                <span className="text-xs text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded font-medium">
-                                                    {slot.Topics.map(t => t.title).join(', ')}
-                                                </span>
+                                                <>
+                                                    <History size={14} /> {pastSpecific.length} vergangene anzeigen
+                                                </>
                                             )}
-                                        </div>
-
-                                        <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {!slot.batchConfigId && (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => openEditModal(slot)} title="Bearbeiten">
-                                                    <Edit2 size={16} />
-                                                </Button>
-                                            )}
-                                            {slot.batchConfigId ? (
-                                                <div title="Vom Admin verwaltet" className="p-2 text-muted-foreground/50 cursor-not-allowed">
-                                                    <Trash2 size={16} />
-                                                </div>
-                                            ) : (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteAvailability(slot.id)} title="Löschen">
-                                                    <Trash2 size={16} />
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                            {availabilities.filter(a => a.type === 'specific_date').length === 0 && (
-                                <div className="col-span-full py-16 text-center border-2 border-dashed border-muted rounded-xl bg-muted/20">
-                                    <p className="text-muted-foreground">Keine spezifischen Tage eingetragen.</p>
-                                    <Button variant="link" className="mt-2 text-primary" onClick={() => openModal('specific_date')}>
-                                        Jetzt einen Tag hinzufügen
+                                        </Button>
+                                    )}
+                                    <Button onClick={() => openModal('specific_date')} className="gap-2 h-9">
+                                        <Plus size={16} /> Datum hinzufügen
                                     </Button>
                                 </div>
-                            )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {displayedSpecific.map(slot => {
+                                    const isPast = slot.specificDate < todayStr;
+
+                                    return (
+                                        <Card 
+                                            key={slot.id} 
+                                            className={cn(
+                                                "group transition-all shadow-sm relative overflow-hidden",
+                                                isPast 
+                                                    ? "border-slate-200 bg-slate-50/70 opacity-75" 
+                                                    : "border-border hover:border-primary/30"
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "absolute left-0 top-0 bottom-0 w-1 transition-colors",
+                                                isPast ? "bg-slate-400" : "bg-primary/60 group-hover:bg-primary"
+                                            )}></div>
+                                            <CardContent className="p-5 pl-7">
+                                                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                    <div className={cn(
+                                                        "flex items-center gap-1.5 font-medium",
+                                                        isPast ? "text-slate-600" : "text-foreground"
+                                                    )}>
+                                                        <CalendarIcon size={16} className={isPast ? "text-slate-500" : "text-primary"} />
+                                                        {format(parseISO(slot.specificDate), 'dd. MMMM yyyy', { locale: de })}
+                                                    </div>
+                                                    {isPast && (
+                                                        <span className="text-[10px] font-semibold uppercase tracking-wider bg-slate-200/80 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300">
+                                                            Vergangen
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className={cn(
+                                                    "flex items-center gap-2 text-2xl font-bold",
+                                                    isPast ? "text-muted-foreground" : "text-foreground"
+                                                )}>
+                                                    {slot.startTime} <span className="text-muted-foreground/40 font-light">-</span> {slot.endTime}
+                                                </div>
+
+                                                {/* TOPIC BADGES */}
+                                                <div className="mt-3">
+                                                    {(!slot.Topics || slot.Topics.length === 0) ? (
+                                                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">Alle Themen</span>
+                                                    ) : (
+                                                        <span className="text-xs text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded font-medium">
+                                                            {slot.Topics.map(t => t.title).join(', ')}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {!slot.batchConfigId && !isPast && (
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => openEditModal(slot)} title="Bearbeiten">
+                                                            <Edit2 size={16} />
+                                                        </Button>
+                                                    )}
+                                                    {slot.batchConfigId ? (
+                                                        <div title="Vom Admin verwaltet" className="p-2 text-muted-foreground/50 cursor-not-allowed">
+                                                            <Trash2 size={16} />
+                                                        </div>
+                                                    ) : (
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteAvailability(slot.id)} title="Löschen">
+                                                            <Trash2 size={16} />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
+                                {displayedSpecific.length === 0 && (
+                                    <div className="col-span-full py-16 text-center border-2 border-dashed border-muted rounded-xl bg-muted/20">
+                                        <p className="text-muted-foreground">
+                                            {allSpecific.length > 0 && pastSpecific.length > 0 
+                                                ? "Keine aktuellen oder zukünftigen spezifischen Tage eingetragen." 
+                                                : "Keine spezifischen Tage eingetragen."}
+                                        </p>
+                                        {pastSpecific.length > 0 && !includePastSpecificDates && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                ({pastSpecific.length} vergangene {pastSpecific.length === 1 ? 'Tag ist' : 'Tage sind'} ausgeblendet)
+                                            </p>
+                                        )}
+                                        <div className="flex justify-center items-center gap-3 mt-3">
+                                            {pastSpecific.length > 0 && !includePastSpecificDates && (
+                                                <Button variant="outline" size="sm" onClick={() => setIncludePastSpecificDates(true)}>
+                                                    <History size={14} className="mr-1.5" /> Vergangene anzeigen
+                                                </Button>
+                                            )}
+                                            <Button variant="link" size="sm" className="text-primary" onClick={() => openModal('specific_date')}>
+                                                Jetzt einen Tag hinzufügen
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
 
                 {/* ABSENCES VIEW */}
                 {activeTab === 'absences' && (() => {

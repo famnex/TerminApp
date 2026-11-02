@@ -64,10 +64,11 @@ Verwende dies für deine regulären Sprechzeiten.
 *   **Beispiel:** Jeden Dienstag von `09:00` bis `11:00` Uhr.
 *   Wähle den Wochentag aus und trage die Start- und Endzeit ein.
 
-### 2. Einmalige, datumsspezifische Zeiten
+### 2. Einmalige, datumsspezifische Zeiten (Spezielle Verfügbarkeiten)
 Verwende dies für Sondertermine, die nur an einem bestimmten Tag stattfinden.
 *   **Beispiel:** Ein Sonder-Sprechtag nur am `18. Oktober 2026` von `14:00` bis `17:00` Uhr.
 *   Wähle das genaue Datum im Kalender und gib die Uhrzeiten ein.
+*   Einzelne Verfügbarkeitstage, die bereits komplett in der Vergangenheit liegen, werden zur besseren Übersicht automatisch ausgeblendet und können über den Button **„Vergangene anzeigen“** jederzeit wieder eingeblendet werden.
 
 ### 3. Gerade / Ungerade Wochen
 Ideal, wenn sich deine Sprechzeiten alle zwei Wochen ändern (z. B. bei wechselndem Dienst- oder Stundenplan).

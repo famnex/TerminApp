@@ -3,11 +3,35 @@ const router = express.Router();
 const { Availability, Topic } = require('../models');
 
 // GET /api/availability/mine
+// Hides completely past specific_date availabilities by default unless includePast=true is specified
 router.get('/mine', async (req, res) => {
     try {
         const userId = req.user.id;
+        const includePast = req.query.includePast === 'true';
+
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        const { Op } = require('sequelize');
+
+        const whereClause = { userId };
+
+        if (!includePast) {
+            whereClause[Op.and] = [
+                {
+                    [Op.or]: [
+                        { type: { [Op.ne]: 'specific_date' } },
+                        { specificDate: { [Op.gte]: todayStr } }
+                    ]
+                }
+            ];
+        }
+
         const availabilities = await Availability.findAll({
-            where: { userId },
+            where: whereClause,
             include: [{ model: Topic, through: { attributes: [] }, attributes: ['id', 'title'] }]
         });
         res.json(availabilities);
