@@ -146,8 +146,9 @@ Für Administratoren gibt es mächtige Werkzeuge, um Einstellungen und Termine f
 *   **Automatisches Anwenden:** Aktiviere "Auf zukünftige Benutzer anwenden". Sobald sich ein neuer Benutzer (z.B. via LDAP oder SSO) das erste Mal anmeldet, erhält er diese Themen und Schichten automatisch zugewiesen.
 
 ### Benutzerverwaltung (Terminstatistiken, Suche & Sortierung):
-*   **Terminübersicht pro Benutzer:** In der Benutzerliste wird für jeden Mitarbeiter direkt angezeigt, wie viele Termine über dieses System gebucht wurden (inkl. Aufschlüsselung nach stattgefunden/vergangen, anstehend und storniert).
-*   **Detail-Drilldown:** Ein Klick auf die Terminzahl öffnet ein Übersichtsfenster mit KPI-Karten und einer vollständigen Liste aller Termine des Nutzers (Datum, Uhrzeit, Thema, Kundendaten, Status).
+*   **Kompakte Terminzahl pro Benutzer:** In der Benutzerliste wird für jeden Mitarbeiter direkt und platzsparend die reine Anzahl an gebuchten Terminen über dieses System angezeigt.
+*   **Detail-Drilldown bei Klick:** Die Status-Aufschlüsselung (wie viele Termine stattgefunden haben, noch anstehend oder storniert sind) sowie die Liste der Buchungen erscheint bei einem Klick auf die Terminzahl in einem aufgeräumten Dialogfenster.
+*   **Optimiertes Tabellenlayout:** Positionstitel und E-Mail-Adressen brechen und kürzen sich responsive ab, sodass die Benutzertabelle auch bei langen Bezeichnungen innerhalb der Ansicht bleibt und kein störender horizontaler Scrollbalken entsteht.
 *   Die Benutzerliste ist standardmäßig **alphabetisch nach Anzeigename** sortiert.
 *   Über das integrierte **Suchfeld** kann in Echtzeit nach Name, Benutzername, E-Mail-Adresse, Position/Funktion, Abteilungszugehörigkeit oder Terminstatus gefiltert werden.
 

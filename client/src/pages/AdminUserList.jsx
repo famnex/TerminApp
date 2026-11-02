@@ -470,54 +470,60 @@ const AdminUserList = () => {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[280px]">Benutzer</TableHead>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead>Rolle</TableHead>
-                                        <TableHead>Auth Methode</TableHead>
-                                        <TableHead>Buchungsseite</TableHead>
-                                        <TableHead>Termine</TableHead>
-                                        <TableHead className="text-right">Aktionen</TableHead>
+                                        <TableHead className="w-[30%] min-w-[200px]">Benutzer</TableHead>
+                                        <TableHead className="min-w-[150px]">Email</TableHead>
+                                        <TableHead className="w-[120px]">Rolle</TableHead>
+                                        <TableHead className="w-[80px]">Auth</TableHead>
+                                        <TableHead className="w-[110px]">Buchungsseite</TableHead>
+                                        <TableHead className="w-[70px] text-center">Termine</TableHead>
+                                        <TableHead className="w-[90px] text-right">Aktionen</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredUsers.map((u) => (
                                         <TableRow key={u.id} className="group">
-                                            <TableCell className="font-medium">
+                                            <TableCell className="font-medium py-3">
                                                 <div className="flex items-center gap-3">
                                                     {u.profileImage ? (
-                                                        <img src={u.profileImage} alt={u.displayName} className="w-10 h-10 rounded-full object-cover border" />
+                                                        <img src={u.profileImage} alt={u.displayName} className="w-9 h-9 rounded-full object-cover border shrink-0" />
                                                     ) : (
-                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${u.isAdmin ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${u.isAdmin ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>
                                                             {u.username.substring(0, 2).toUpperCase()}
                                                         </div>
                                                     )}
-                                                    <div className="flex flex-col">
-                                                        <span>{u.displayName}</span>
-                                                        <div className="flex items-center gap-2">
+                                                    <div className="flex flex-col min-w-0 max-w-[260px]">
+                                                        <span className="truncate leading-snug">{u.displayName}</span>
+                                                        <div className="flex flex-wrap items-center gap-1 mt-0.5">
                                                             <span className="text-xs text-muted-foreground font-mono">@{u.username}</span>
                                                             {u.position && u.position.split(',').map(s => s.trim()).filter(Boolean).map((pos, idx) => (
-                                                                <span key={idx} className="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{pos}</span>
+                                                                <span key={idx} className="text-[11px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 truncate max-w-[190px]" title={pos}>{pos}</span>
                                                             ))}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col">
-                                                    <span>{u.email || <span className="text-muted-foreground italic">Keine Email</span>}</span>
-                                                    {!u.showEmail && u.email && <span className="text-[10px] text-orange-600 flex items-center gap-0.5"><EyeOff className="w-3 h-3" /> Versteckt</span>}
+                                            <TableCell className="py-3">
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-sm truncate max-w-[190px]" title={u.email || ''}>
+                                                        {u.email || <span className="text-muted-foreground italic">Keine Email</span>}
+                                                    </span>
+                                                    {!u.showEmail && u.email && (
+                                                        <span className="text-[10px] text-orange-600 flex items-center gap-0.5 mt-0.5">
+                                                            <EyeOff className="w-3 h-3" /> Versteckt
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
-                                                <div className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${u.isAdmin ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
+                                            <TableCell className="py-3 whitespace-nowrap">
+                                                <div className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${u.isAdmin ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
                                                     {u.isAdmin ? <Shield className="mr-1 h-3 w-3" /> : <User className="mr-1 h-3 w-3" />}
                                                     {u.isAdmin ? 'Administrator' : 'Benutzer'}
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="py-3 whitespace-nowrap">
                                                 <span className="font-mono text-xs text-muted-foreground uppercase">{u.authMethod}</span>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="py-3 whitespace-nowrap">
                                                 {u.bookingPageActive ? (
                                                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                                         <span className="h-1.5 w-1.5 rounded-full bg-green-500"></span>
@@ -530,60 +536,34 @@ const AdminUserList = () => {
                                                     </span>
                                                 )}
                                             </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col">
-                                                    {u.bookingStats?.total > 0 ? (
-                                                        <div>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => openUserBookingsModal(u)}
-                                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors cursor-pointer group-hover:border-blue-300"
-                                                                title="Klicken für Termindetails"
-                                                            >
-                                                                <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                                                                <span>{u.bookingStats.total} {u.bookingStats.total === 1 ? 'Termin' : 'Termine'}</span>
-                                                            </button>
-                                                            <div className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-1 mt-1 pl-0.5">
-                                                                <span className="text-emerald-700 font-medium">{u.bookingStats.past} stattgefunden</span>
-                                                                {u.bookingStats.upcoming > 0 && (
-                                                                    <span>· <span className="text-blue-700 font-medium">{u.bookingStats.upcoming} anstehend</span></span>
-                                                                )}
-                                                                {u.bookingStats.cancelled > 0 && (
-                                                                    <span>· <span className="text-amber-700">{u.bookingStats.cancelled} storniert</span></span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs text-muted-foreground bg-slate-50 border border-slate-200 w-fit">
-                                                            0 Termine
-                                                        </span>
-                                                    )}
-                                                </div>
+                                            <TableCell className="py-3 text-center whitespace-nowrap">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openUserBookingsModal(u)}
+                                                    className={`inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                                                        u.bookingStats?.total > 0
+                                                            ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                                                            : 'text-muted-foreground bg-slate-50 hover:bg-slate-100 border border-slate-200'
+                                                    }`}
+                                                    title={`${u.bookingStats?.total || 0} Termine – Klicken für Details (stattgefunden, anstehend, storniert)`}
+                                                >
+                                                    {u.bookingStats?.total || 0}
+                                                </button>
                                             </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex justify-end gap-2">
-                                                    <Button variant="ghost" size="icon" onClick={() => openEditModal(u)}>
+                                            <TableCell className="py-3 text-right whitespace-nowrap">
+                                                <div className="flex justify-end gap-1">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditModal(u)} title="Benutzer bearbeiten">
                                                         <Edit2 className="h-4 w-4" />
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                                                         onClick={() => handleDelete(u.id)}
                                                         title="Benutzer löschen"
                                                     >
                                                         <Trash className="h-4 w-4" />
                                                     </Button>
-                                                    {false && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                            onClick={() => handleDelete(u.id)}
-                                                        >
-                                                            <Trash className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>
