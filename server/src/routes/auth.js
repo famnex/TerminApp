@@ -68,7 +68,7 @@ router.post('/login', async (req, res) => {
                     let needsSave = false;
 
                     const ldapDisplayName = ldapUser.displayName || ldapUser.cn;
-                    if (ldapDisplayName && user.displayName !== ldapDisplayName) {
+                    if (!user.displayNameOverridden && ldapDisplayName && user.displayName !== ldapDisplayName) {
                         user.displayName = ldapDisplayName;
                         needsSave = true;
                     }
@@ -235,10 +235,10 @@ router.post('/sso', async (req, res) => {
                 isAdmin: isAdmin
             });
         } else {
-            // Update existing user attributes on every login, including overwriting displayName from token claim
+            // Refresh external attributes while preserving an admin-assigned display name.
             let needsSave = false;
 
-            if (displayName && user.displayName !== displayName) {
+            if (!user.displayNameOverridden && displayName && user.displayName !== displayName) {
                 user.displayName = displayName;
                 needsSave = true;
             }

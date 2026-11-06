@@ -66,6 +66,15 @@ if (fs.existsSync(publicDir)) {
 sequelize.sync().then(async () => {
     console.log('Database synced');
 
+    // Preserve admin-assigned names when external authentication refreshes profiles.
+    const queryInterface = sequelize.getQueryInterface();
+    const userColumns = await queryInterface.describeTable('Users');
+    if (!userColumns.displayNameOverridden) {
+        await queryInterface.addColumn('Users', 'displayNameOverridden', {
+            type: require('sequelize').DataTypes.BOOLEAN, allowNull: false, defaultValue: false
+        });
+    }
+
     // Run schema upgrade queries if needed
     try {
         await sequelize.query("ALTER TABLE Users ADD COLUMN bookingPageActive BOOLEAN DEFAULT 0");

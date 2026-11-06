@@ -968,15 +968,16 @@ const AdminUserList = () => {
 
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label>Anzeigename {isLdap && <span className="text-xs text-muted-foreground">(Gesperrt durch {formData.authMethod?.toUpperCase()})</span>}</Label>
+                                        <Label htmlFor="editDisplayName">Anzeigename</Label>
                                         <Input
+                                            id="editDisplayName"
                                             name="displayName"
-                                            disabled={isLdap}
-                                            className={isLdap ? "bg-muted" : ""}
+                                            maxLength={255}
                                             required
                                             value={formData.displayName}
                                             onChange={handleInputChange}
                                         />
+                                        <p className="text-xs text-muted-foreground">Für Namensschilder bitte „Nachname, Vorname“ verwenden. Änderungen durch Administratoren bleiben auch nach LDAP-/SSO-Anmeldungen erhalten.</p>
                                     </div>
 
                                     <div className="space-y-2">

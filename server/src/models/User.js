@@ -16,6 +16,11 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    displayNameOverridden: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    },
     email: {
         type: DataTypes.STRING,
         allowNull: true,

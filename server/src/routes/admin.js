@@ -125,8 +125,15 @@ router.put('/users/:id', async (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         // Update fields
-        if (user.authMethod === 'local' && displayName) {
-            user.displayName = displayName;
+        if (displayName !== undefined) {
+            if (typeof displayName !== 'string' || !displayName.trim() || displayName.trim().length > 255) {
+                return res.status(400).json({ error: 'Der Anzeigename muss 1 bis 255 Zeichen enthalten.' });
+            }
+            const name = displayName.trim();
+            if (name !== user.displayName) {
+                user.displayName = name;
+                user.displayNameOverridden = true;
+            }
         }
         user.email = email || user.email;
         if (isAdmin !== undefined) user.isAdmin = isAdmin;
