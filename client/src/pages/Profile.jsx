@@ -1,3 +1,4 @@
+import NameBadge from '../components/NameBadge';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -466,6 +467,7 @@ const Profile = () => {
                     </CardFooter>
                 </Card>
             </form>
+            <NameBadge key={`${user.id}:${user.displayName}:${user.bookingPageActive}`} userId={user.id} />
         </div>
     );
 };

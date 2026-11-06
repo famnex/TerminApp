@@ -1,3 +1,4 @@
+import NameBadgeSettings from '../components/NameBadgeSettings';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
@@ -51,7 +52,7 @@ const Settings = () => {
         try {
             const res = await api.get('/admin/settings');
             const settingsMap = {};
-            res.data.forEach(s => settingsMap[s.key] = s.value);
+            res.data.filter(s => !s.key.startsWith('name_badge_')).forEach(s => settingsMap[s.key] = s.value);
             setSettings(settingsMap);
             setOriginalSettings(settingsMap);
             if (user?.email) {
@@ -214,6 +215,8 @@ const Settings = () => {
                     <p className="text-muted-foreground mt-1">Konfigurieren Sie LDAP, SMTP und Schul-Informationen.</p>
                 </div>
             </div>
+
+            <NameBadgeSettings />
 
             {/* Config Tabs */}
             <div className="flex space-x-1 rounded-xl bg-muted p-1 w-full md:w-auto md:inline-flex">

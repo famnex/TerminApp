@@ -133,3 +133,15 @@ Du musst dich nicht täglich in der TerminApp anmelden, um zu sehen, ob neue Ter
 *   Im Anhang dieser E-Mail befindet sich eine kleine Datei namens **`invite.ics`**.
 *   Doppelklicke einfach auf diese Datei in deinem E-Mail-Programm (z. B. Outlook auf dem PC oder Mail auf dem Smartphone), um den Termin mit einem Klick in deinen persönlichen Kalender einzutragen.
 *   Auch bei einer Absage erhältst du eine Mail mit einer Aktualisierung, die den Termin aus deinem Kalender wieder entfernt.
+
+## Namensschilder mit Buchungs-QR-Code
+
+Unter **Mein Profil → Namensschild** können Sie „Herr“ oder „Frau“ sowie „Lehrer“, „Lehrerin“, „Schulleitung“ oder einen eigenen Zusatz wählen. Der Nachname wird automatisch aus dem Anzeigenamen bis zum ersten Komma übernommen; ohne Komma wird der gesamte Anzeigename verwendet. **Angaben speichern** merkt sich Anrede und Zusatz unabhängig von der öffentlichen Profilposition.
+
+Die Vorschau zeigt oben das zentrierte Logo und darunter links den QR-Code, rechts daneben linksbündig Name und Zusatz. Der QR-Code führt zur persönlichen Buchungsseite. Bei deaktivierter Buchungsseite erscheint ein Hinweis; aktivieren Sie diese vor Verwendung des Schildes im Profil.
+
+**Drucken** öffnet den Browser-Druckdialog für ein Schild auf A4. Wählen Sie 100 % bzw. „Tatsächliche Größe“ und deaktivieren Sie Kopf-/Fußzeilen. **PDF herunterladen** erzeugt eine PDF-Seite exakt in den eingestellten Schildmaßen, mit 300-dpi-Grafik.
+
+Administratoren legen unter **Einstellungen → Namensschilder** Breite und Höhe in Millimetern (40–200 mm, Vorgabe 90 × 60 mm) sowie das vollständige Logo inklusive Schriftzug fest. PNG und JPEG bis 2 MB werden unterstützt. Nach dem Upload **Schild-Einstellungen speichern** anklicken. Das Logo für Namensschilder ist unabhängig vom Logo im App-Header. Für dauerhaft korrekte QR-Links sollte unter **Schule / Allgemein** die öffentliche Anwendungs-URL inklusive Unterverzeichnis eingetragen sein.
+
+In der **Benutzerverwaltung** öffnet die Schaltfläche **Namensschild** dieselbe Vorschau und Druckfunktion für die ausgewählte Person. Normale Benutzer können ausschließlich ihre eigenen Schild-Angaben lesen und ändern.

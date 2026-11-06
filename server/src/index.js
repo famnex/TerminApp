@@ -31,6 +31,8 @@ const adminRoutes = require('./routes/admin');
 // Protect all /api/admin routes with authenticateToken
 app.use('/api/admin', authenticateToken, adminRoutes);
 
+app.use('/api/name-badges', authenticateToken, require('./routes/nameBadges'));
+
 const availabilityRoutes = require('./routes/availability');
 app.use('/api/availability', authenticateToken, availabilityRoutes);
 

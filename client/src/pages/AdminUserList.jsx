@@ -1,3 +1,5 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
+import NameBadge from '../components/NameBadge';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
@@ -26,6 +28,7 @@ import { de } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 const AdminUserList = () => {
+    const [badgeUser, setBadgeUser] = useState(null);
     const [users, setUsers] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -347,6 +350,12 @@ const AdminUserList = () => {
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-fade-in-up pb-20">
+            <Dialog open={!!badgeUser} onOpenChange={open => { if (!open) setBadgeUser(null); }}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader><DialogTitle>Namensschild für {badgeUser?.displayName}</DialogTitle><DialogDescription>Anrede und Zusatz wählen, anschließend drucken oder als PDF herunterladen.</DialogDescription></DialogHeader>
+                    {badgeUser && <NameBadge key={badgeUser.id} userId={badgeUser.id} />}
+                </DialogContent>
+            </Dialog>
             {/* Header */}
             <div>
                 <Button variant="ghost" onClick={() => navigate('/dashboard')} className="pl-0 text-muted-foreground hover:text-primary mb-6">
@@ -552,6 +561,7 @@ const AdminUserList = () => {
                                             </TableCell>
                                             <TableCell className="py-3 text-right whitespace-nowrap">
                                                 <div className="flex justify-end gap-1">
+                                                    <Button variant="outline" size="sm" onClick={() => setBadgeUser(u)}>Namensschild</Button>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditModal(u)} title="Benutzer bearbeiten">
                                                         <Edit2 className="h-4 w-4" />
                                                     </Button>

@@ -173,6 +173,7 @@ router.get('/settings', async (req, res) => {
 router.post('/settings', async (req, res) => {
     try {
         const { key, value } = req.body;
+        if (typeof key === 'string' && key.startsWith('name_badge_')) return res.status(400).json({ error: 'Bitte die Namensschild-Einstellungen verwenden.' });
         await GlobalSettings.upsert({ key, value });
         res.json({ success: true });
     } catch (err) {
