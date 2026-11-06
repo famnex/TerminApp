@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const { User, GlobalSettings } = require('../models');
 const { requireAdmin } = require('../middleware/auth');
 const router = express.Router();
-const defaults = { width: 90, height: 60, logo: '' };
+const { defaults, validateLayout } = require('../config/nameBadgeLayout');
 const read = async (key, fallback) => {
     const row = await GlobalSettings.findByPk(key);
     return row ? JSON.parse(row.value) : fallback;
@@ -18,14 +18,10 @@ router.get('/settings', wrap(async (req, res) => {
     res.json({ ...defaults, ...await read('name_badge_settings', {}), appUrl: appUrl?.value || '' });
 }));
 router.put('/settings', requireAdmin, wrap(async (req, res) => {
-    const { width, height, logo } = req.body;
-    if (![width, height].every(n => typeof n === 'number' && Number.isFinite(n) && n >= 40 && n <= 200)) {
-        return res.status(400).json({ error: 'Breite und Höhe müssen zwischen 40 und 200 mm liegen.' });
-    }
-    if (typeof logo !== 'string' || (logo && !/^uploads\/badge-[a-f0-9-]+\.(png|jpg)$/.test(logo))) {
-        return res.status(400).json({ error: 'Bitte ein Namensschild-Logo hochladen.' });
-    }
-    await save('name_badge_settings', { width, height, logo });
+    let settings;
+    try { settings = validateLayout(req.body); }
+    catch (err) { return res.status(400).json({ error: err.message }); }
+    await save('name_badge_settings', settings);
     res.json({ success: true });
 }));
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });

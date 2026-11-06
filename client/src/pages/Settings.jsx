@@ -216,11 +216,9 @@ const Settings = () => {
                 </div>
             </div>
 
-            <NameBadgeSettings />
-
             {/* Config Tabs */}
-            <div className="flex space-x-1 rounded-xl bg-muted p-1 w-full md:w-auto md:inline-flex">
-                {['ldap', 'smtp', 'sso', 'general'].map((tab) => (
+            <div className="flex flex-wrap gap-1 rounded-xl bg-muted p-1 w-full md:w-auto md:inline-flex">
+                {['ldap', 'smtp', 'sso', 'general', 'badges'].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -229,12 +227,13 @@ const Settings = () => {
                             ${activeTab === tab ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10'}
                         `}
                     >
-                        {tab === 'ldap' ? 'LDAP' : tab === 'smtp' ? 'SMTP' : tab === 'sso' ? 'SSO (JWT)' : 'Schule / Allgemein'}
+                        {tab === 'ldap' ? 'LDAP' : tab === 'smtp' ? 'SMTP' : tab === 'sso' ? 'SSO (JWT)' : tab === 'badges' ? 'Namensschilder' : 'Schule / Allgemein'}
                     </button>
                 ))}
             </div>
 
-            <form onSubmit={handleSave}>
+            <div hidden={activeTab !== 'badges'}><NameBadgeSettings /></div>
+            <form onSubmit={handleSave} hidden={activeTab === 'badges'}>
                 <Card className="min-h-[400px]">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>

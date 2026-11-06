@@ -43,14 +43,14 @@ export default function NameBadge({ userId }) {
                 {custom && <Input aria-label="Eigener Zusatz" placeholder="z. B. Schulsozialarbeit" maxLength={100} value={person.position} onChange={e => setPerson({ ...person, position: e.target.value })} />}
                 {!person.bookingPageActive && <p className="text-amber-800 bg-amber-50 p-3 rounded">Die Buchungsseite dieser Person ist deaktiviert. Bitte vor der Verwendung des QR-Codes im Profil aktivieren.</p>}
                 {image && <div className="border rounded bg-slate-100 p-4"><img src={image} alt="Vorschau des Namensschilds" className="max-w-full mx-auto shadow" style={{ width: `${settings.width}mm` }} /></div>}
-                {image && <p className="text-sm text-muted-foreground">{settings.width} × {settings.height} mm · <a className="underline" href={bookingUrl(settings.appUrl, person.id)} target="_blank" rel="noreferrer">Buchungsseite prüfen</a></p>}
+                {image && <p className="text-sm text-muted-foreground">{settings.width} × {settings.height} mm{settings.printScale !== 100 && ` · Druckkorrektur: ${settings.printScale} %`} · <a className="underline" href={bookingUrl(settings.appUrl, person.id)} target="_blank" rel="noreferrer">Buchungsseite prüfen</a></p>}
                 {!settings?.logo && settings && <p className="text-sm text-muted-foreground">Noch kein Logo hinterlegt. Der Administrator kann das vollständige Schullogo unter Einstellungen hochladen.</p>}
                 <div className="flex flex-wrap gap-2">
                     <Button type="button" disabled={busy || !person.position.trim()} variant="outline" onClick={() => run(async () => { await api.put(`/name-badges/users/${userId}`, { salutation: person.salutation, position: person.position }); toast.success('Schild-Angaben gespeichert.'); })}>Angaben speichern</Button>
                     <Button type="button" disabled={busy || !image || !person.position.trim()} onClick={() => run(() => printBadge(image, settings))}>Drucken</Button>
-                    <Button type="button" disabled={busy || !image || !person.position.trim()} onClick={() => run(() => downloadBadge(image, settings))}>PDF herunterladen</Button>
+                    <Button type="button" disabled={busy || !image || !person.position.trim()} onClick={() => run(() => downloadBadge(image, settings))}>PDF herunterladen (A4)</Button>
                 </div>
-                <p className="text-xs text-muted-foreground">Beim Drucken „Tatsächliche Größe“ bzw. 100 % wählen und Kopf-/Fußzeilen ausschalten. Das PDF hat exakt das eingestellte Schildformat.</p>
+                <p className="text-xs text-muted-foreground">Beim Drucken „Tatsächliche Größe“ bzw. 100 % wählen und Kopf-/Fußzeilen ausschalten. Das PDF enthält das Schild mit Rahmen in den eingestellten Maßen auf einem A4-Blatt.</p>
             </>}
         </CardContent>
     </Card>;

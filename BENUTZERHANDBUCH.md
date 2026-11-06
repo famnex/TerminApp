@@ -140,7 +140,7 @@ Unter **Mein Profil → Namensschild** können Sie „Herr“ oder „Frau“ so
 
 Die Vorschau zeigt oben das zentrierte Logo und darunter links den QR-Code, rechts daneben linksbündig Name und Zusatz. Der QR-Code führt zur persönlichen Buchungsseite. Bei deaktivierter Buchungsseite erscheint ein Hinweis; aktivieren Sie diese vor Verwendung des Schildes im Profil.
 
-**Drucken** öffnet den Browser-Druckdialog für ein Schild auf A4. Wählen Sie 100 % bzw. „Tatsächliche Größe“ und deaktivieren Sie Kopf-/Fußzeilen. **PDF herunterladen** erzeugt eine PDF-Seite exakt in den eingestellten Schildmaßen, mit 300-dpi-Grafik.
+**Drucken** öffnet den Browser-Druckdialog für ein Schild auf A4. Wählen Sie 100 % bzw. „Tatsächliche Größe“ und deaktivieren Sie Kopf-/Fußzeilen. **PDF herunterladen (A4)** legt das Schild mit 300-dpi-Grafik in den eingestellten Millimetermaßen auf ein A4-Blatt. Der Rahmen liegt innerhalb der Schildfläche. Auch im PDF-Druckdialog 100 % / „Tatsächliche Größe“ wählen.
 
 Administratoren legen unter **Einstellungen → Namensschilder** Breite und Höhe in Millimetern (40–200 mm, Vorgabe 90 × 60 mm) sowie das vollständige Logo inklusive Schriftzug fest. PNG und JPEG bis 2 MB werden unterstützt. Nach dem Upload **Schild-Einstellungen speichern** anklicken. Das Logo für Namensschilder ist unabhängig vom Logo im App-Header. Für dauerhaft korrekte QR-Links sollte unter **Schule / Allgemein** die öffentliche Anwendungs-URL inklusive Unterverzeichnis eingetragen sein.
 
@@ -155,3 +155,12 @@ git stash push -m "Lockdateien vor Update sichern" -- package-lock.json client/p
 ```
 
 Danach erneut das Update in der App starten. Ab 1.25.1 sichert der Updater veränderte Lockdateien automatisch in einem Git-Stash und protokolliert dessen Commit-ID. Die Sicherung wird nicht automatisch zurückgespielt, damit die neuen Abhängigkeiten verwendet werden. `npm ci` installiert anschließend die festgeschriebenen Versionen für Root, Server und Client, ohne Lockdateien umzuschreiben. Andere lokale Codeänderungen werden nicht automatisch zurückgesetzt; bei Konflikten oder abweichender Git-Historie bricht das Update ab.
+
+
+### Namensschild-Vorlage gestalten (ab 1.26.0)
+
+Unter **Einstellungen → Namensschilder** gibt es einen eigenen Tab mit Live-Vorschau. Einstellbar sind Schildmaße, Rahmenstärke/-farbe, Logo-Breite, Ausrichtung, horizontale Verschiebung und Abstand oben. Die Logo-Höhe wird aus dem Seitenverhältnis berechnet. QR-Code-Größe/-farbe, Position des QR-/Textbereichs, Abstände, Schriftgrößen in Punkt und Textfarben sind ebenfalls konfigurierbar. Zu große Inhalte erzeugen eine Fehlermeldung; die Schrift wird nicht automatisch verkleinert.
+
+Beispielname und Beispiel-Zusatz testen das Layout, ohne Benutzerprofile zu ändern. Erst **Schild-Einstellungen speichern** übernimmt die Vorlage für alle Benutzer. Auch in „Mein Profil“ und beim Admin-Druck anderer Benutzer wird dieselbe Vorlage verwendet.
+
+**Testdruck mit Kontrollmaß** druckt zusätzlich eine 50-mm-Linie. Wählen Sie A4, 100 % bzw. „Tatsächliche Größe“ und keine Kopf-/Fußzeilen. Eine Bildschirmvorschau ist kein physischer Maßstab. Messen Sie das Schild außen am Rahmen und bei Bedarf die Kontrolllinie. Die Druckkorrektur steht standardmäßig auf 100 % und wirkt gleichermaßen auf PDF und direkten Druck; die Kontrolllinie bleibt davon unabhängig 50 mm lang. Bei verbleibenden Abweichungen gilt: neue Korrektur = bisherige Korrektur × Sollmaß / gemessenes Maß. Druckertreiber-Einstellungen lassen sich durch die App nicht erzwingen.
