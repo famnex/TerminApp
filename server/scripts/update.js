@@ -105,7 +105,8 @@ try {
         // Redirect stdio to log file is tricky with execSync, so we capture output
         try {
             // Explicitly pull origin main to avoid tracking issues
-            const output = execSync('git pull origin main', { cwd: ROOT_DIR, encoding: 'utf8' });
+            const { pullWithLockfileBackup } = require('./update-git');
+            const output = pullWithLockfileBackup(ROOT_DIR, log);
             log(output);
         } catch (e) {
             log('Git Pull Error: ' + e.message);
@@ -115,24 +116,19 @@ try {
         }
     }
 
-    // 3. Install Dependencies (Root/Server)
-    log('Installing server dependencies...');
-    try {
-        const output = execSync('npm install', { cwd: ROOT_DIR, encoding: 'utf8' });
-        log(output);
-    } catch (e) {
-        log('NPM Install Error: ' + e.message);
-        throw e;
-    }
-
-    // 4. Install Dependencies (Client)
-    log('Installing client dependencies...');
-    try {
-        const output = execSync('npm install', { cwd: CLIENT_DIR, encoding: 'utf8' });
-        log(output);
-    } catch (e) {
-        log('Client NPM Install Error: ' + e.message);
-        throw e;
+    // Install exactly the committed dependency versions without rewriting lockfiles.
+    for (const [label, directory, command] of [
+        ['root', ROOT_DIR, 'npm ci --include=dev'],
+        ['server', SERVER_DIR, 'npm ci --omit=dev'],
+        ['client', CLIENT_DIR, 'npm ci --include=dev']
+    ]) {
+        log(`Installing ${label} dependencies from lockfile...`);
+        try {
+            log(execSync(command, { cwd: directory, encoding: 'utf8' }));
+        } catch (e) {
+            log(`${label} dependency installation failed: ` + e.message);
+            throw e;
+        }
     }
 
     // 5. Build Client

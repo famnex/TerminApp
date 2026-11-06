@@ -145,3 +145,13 @@ Die Vorschau zeigt oben das zentrierte Logo und darunter links den QR-Code, rech
 Administratoren legen unter **Einstellungen → Namensschilder** Breite und Höhe in Millimetern (40–200 mm, Vorgabe 90 × 60 mm) sowie das vollständige Logo inklusive Schriftzug fest. PNG und JPEG bis 2 MB werden unterstützt. Nach dem Upload **Schild-Einstellungen speichern** anklicken. Das Logo für Namensschilder ist unabhängig vom Logo im App-Header. Für dauerhaft korrekte QR-Links sollte unter **Schule / Allgemein** die öffentliche Anwendungs-URL inklusive Unterverzeichnis eingetragen sein.
 
 In der **Benutzerverwaltung** öffnet die Schaltfläche **Namensschild** dieselbe Vorschau und Druckfunktion für die ausgewählte Person. Normale Benutzer können ausschließlich ihre eigenen Schild-Angaben lesen und ändern.
+
+### Update durch lokale Lockdateien blockiert
+
+Bis einschließlich 1.25.0 kann `npm install` Änderungen an `package-lock.json` hinterlassen und dadurch das nächste Git-Update blockieren. Im Hauptordner der App lassen sich die betroffenen Dateien vor einem erneuten Update sichern:
+
+```bash
+git stash push -m "Lockdateien vor Update sichern" -- package-lock.json client/package-lock.json server/package-lock.json
+```
+
+Danach erneut das Update in der App starten. Ab 1.25.1 sichert der Updater veränderte Lockdateien automatisch in einem Git-Stash und protokolliert dessen Commit-ID. Die Sicherung wird nicht automatisch zurückgespielt, damit die neuen Abhängigkeiten verwendet werden. `npm ci` installiert anschließend die festgeschriebenen Versionen für Root, Server und Client, ohne Lockdateien umzuschreiben. Andere lokale Codeänderungen werden nicht automatisch zurückgesetzt; bei Konflikten oder abweichender Git-Historie bricht das Update ab.
