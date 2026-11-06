@@ -1,14 +1,14 @@
-name: Publish 1.26.0
+name: Publish 1.26.1
 on:
   push:
     branches: [main]
     paths:
       - package.json
-      - .github/workflows/release-1.26.0.yml
+      - .github/workflows/release-1.26.1.yml
 permissions:
   contents: write
 concurrency:
-  group: release-1.26.0
+  group: release-1.26.1
   cancel-in-progress: false
 jobs:
   publish:
@@ -22,15 +22,15 @@ jobs:
           set -euo pipefail
           for package in package.json server/package.json client/package.json; do
             version=$(gh api "repos/${GH_REPO}/contents/${package}?ref=${GITHUB_SHA}" --jq .content | base64 --decode | jq -r .version)
-            if [ "$version" != "1.26.0" ]; then
+            if [ "$version" != "1.26.1" ]; then
               echo "Skipping release: $package is $version."
               exit 0
             fi
           done
-          if gh release view v1.26.0 >/dev/null 2>&1; then
-            echo "Release v1.26.0 already exists."
+          if gh release view v1.26.1 >/dev/null 2>&1; then
+            echo "Release v1.26.1 already exists."
             exit 0
           fi
-          gh release create v1.26.0 --target "$GITHUB_SHA" \
-            --title "Version 1.26.0" \
-            --notes "Eigener Namensschild-Tab mit Live-Vorschau. Einstellbare Logo-Breite mit automatischer Höhe, Ausrichtung und Position, Schriftgrößen und Farben, QR-Code-Größe und Abstände sowie Druckrahmen. Maßhaltiger A4-PDF-Export, A4-Drucklayout, Druckkorrektur und Testdruck mit 50-mm-Kontrolllinie."
+          gh release create v1.26.1 --target "$GITHUB_SHA" \
+            --title "Version 1.26.1" \
+            --notes "Verständliche Validierung der Namensschild-Einstellungen: Ungültige Felder werden direkt markiert. Fehlermeldungen nennen Feldname, eingegebenen Wert, Einheit und erlaubten Bereich; mehrere fehlerhafte Werte werden gemeinsam angezeigt."

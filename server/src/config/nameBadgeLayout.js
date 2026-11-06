@@ -11,11 +11,69 @@ const ranges = {
     nameFontSize: [6, 60], positionFontSize: [6, 48], lineGap: [0, 20],
     borderWidth: [0.1, 2], printScale: [50, 150]
 };
+const fieldLabels = {
+    "width": [
+        "Schildbreite",
+        "mm"
+    ],
+    "height": [
+        "Schildhöhe",
+        "mm"
+    ],
+    "logoWidth": [
+        "Logo-Breite",
+        "mm"
+    ],
+    "logoTop": [
+        "Logo-Abstand oben",
+        "mm"
+    ],
+    "logoOffsetX": [
+        "Logo horizontal verschieben",
+        "mm"
+    ],
+    "contentTop": [
+        "QR-/Textbereich oben",
+        "mm"
+    ],
+    "margin": [
+        "Seiten-/Unterrand",
+        "mm"
+    ],
+    "qrSize": [
+        "QR-Code-Größe",
+        "mm"
+    ],
+    "textGap": [
+        "Abstand QR → Text",
+        "mm"
+    ],
+    "nameFontSize": [
+        "Name: Schriftgröße",
+        "pt"
+    ],
+    "positionFontSize": [
+        "Zusatz: Schriftgröße",
+        "pt"
+    ],
+    "lineGap": [
+        "Abstand Name → Zusatz",
+        "mm"
+    ],
+    "borderWidth": [
+        "Rahmenstärke",
+        "mm"
+    ],
+    "printScale": [
+        "Druckkorrektur",
+        "%"
+    ]
+};
 function validateLayout(input) {
     const value = { ...defaults };
     for (const [key, [min, max]] of Object.entries(ranges)) {
         const n = input[key] === undefined ? defaults[key] : input[key];
-        if (typeof n !== 'number' || !Number.isFinite(n) || n < min || n > max) throw new Error(`${key}: Wert muss zwischen ${min} und ${max} liegen.`);
+        if (typeof n !== 'number' || !Number.isFinite(n) || n < min || n > max) throw new Error(`${fieldLabels[key][0]}: ${n === null || n === "" ? "kein Wert" : String(n).replace(".", ",")} – erlaubt sind ${String(min).replace(".", ",")}–${String(max).replace(".", ",")} ${fieldLabels[key][1]}.`);
         value[key] = n;
     }
     for (const key of ['nameColor', 'positionColor', 'qrColor', 'borderColor']) {

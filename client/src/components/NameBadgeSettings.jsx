@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { renderBadge, printBadge, downloadBadge } from '../lib/nameBadge';
+import { badgeNumberErrors, badgeNumberRules } from '../lib/nameBadgeValidation';
 import { toast } from 'sonner';
 
 export default function NameBadgeSettings() {
@@ -34,8 +35,15 @@ export default function NameBadgeSettings() {
         return () => { active = false; clearTimeout(timer); };
     }, [settings, exampleName, examplePosition, user.id]);
     const change = (key, value) => setSettings(s => ({ ...s, [key]: value }));
+    const fieldErrors = settings ? badgeNumberErrors(settings) : {};
     const number = (key, label, min, max, step = 0.1) => <label className="block text-sm space-y-1" key={key}>
-        <span>{label}</span><Input type="number" required min={min} max={max} step={step} value={settings[key]} onChange={e => change(key, e.target.value === '' ? '' : Number(e.target.value))} />
+        <span>{label}</span><Input id={`badge-${key}`} type="number" required min={min} max={max} step={step} value={settings[key]}
+            aria-invalid={!!fieldErrors[key]} aria-describedby={`badge-${key}-help`}
+            className={fieldErrors[key] ? 'border-red-600 focus-visible:ring-red-600' : ''}
+            onChange={e => change(key, e.target.value === '' ? '' : Number(e.target.value))} />
+        <span id={`badge-${key}-help`} className={`block text-xs ${fieldErrors[key] ? 'text-red-700' : 'text-muted-foreground'}`}>
+            {fieldErrors[key] || `Erlaubt: ${String(min).replace('.', ',')}–${String(max).replace('.', ',')} ${badgeNumberRules[key][3]}`}
+        </span>
     </label>;
     const color = (key, label) => <label className="block text-sm space-y-1" key={key}><span>{label}</span><Input type="color" value={settings[key]} onChange={e => change(key, e.target.value)} className="p-1 h-10" /></label>;
     const upload = async e => {
@@ -102,9 +110,9 @@ export default function NameBadgeSettings() {
                     <label className="block text-sm space-y-1">Beispiel-Zusatz<Input value={examplePosition} maxLength={100} onChange={e => setExamplePosition(e.target.value)} /></label>
                     <p className="text-xs text-muted-foreground">Beispieldaten ändern keine Benutzerprofile. Der Test-QR-Code führt zu deiner Buchungsseite.</p>
                     <div className="bg-slate-100 rounded-lg p-4 min-h-40 flex items-center justify-center" aria-live="polite">
-                        {image ? <img src={image} alt="Live-Vorschau des Namensschilds" className="w-full shadow" /> : <p className="text-sm text-slate-700">{previewError || 'Vorschau wird erstellt …'}</p>}
+                        {image ? <img src={image} alt="Live-Vorschau des Namensschilds" className="w-full shadow" /> : <p className="text-sm text-slate-700 whitespace-pre-line">{previewError || 'Vorschau wird erstellt …'}</p>}
                     </div>
-                    {previewError && <p role="alert" className="text-sm text-red-700">{previewError}</p>}
+                    {previewError && <p role="alert" className="text-sm text-red-700 whitespace-pre-line">{previewError}</p>}
                     <p className="text-sm">Schild: {settings.width} × {settings.height} mm<br />Druck: {(Number(settings.width) * Number(settings.printScale) / 100).toFixed(1)} × {(Number(settings.height) * Number(settings.printScale) / 100).toFixed(1)} mm</p>
                     <p className="text-xs text-muted-foreground">Die Vorschau ist an den Bildschirm angepasst, nicht in physischer Originalgröße. Druck und PDF enthalten den Rahmen innerhalb der angegebenen Maße.</p>
                     <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" disabled={!image || busy} onClick={() => output(false)}>Testdruck mit Kontrollmaß</Button><Button type="button" variant="outline" disabled={!image || busy} onClick={() => output(true)}>Test-PDF (A4)</Button></div>

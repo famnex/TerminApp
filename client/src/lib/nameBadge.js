@@ -1,3 +1,4 @@
+import { badgeNumberErrors } from './nameBadgeValidation.js';
 import QRCode from 'qrcode';
 
 export const badgeSurname = name => (name || '').split(',')[0].trim();
@@ -20,9 +21,8 @@ export async function renderBadge(settings, person) {
     const scale = 300 / 25.4;
     const n = key => Number(settings[key]);
     const w = n('width'), h = n('height'), pad = n('margin');
-    const numberKeys = ['width', 'height', 'margin', 'logoWidth', 'logoTop', 'logoOffsetX', 'contentTop', 'qrSize', 'textGap', 'nameFontSize', 'positionFontSize', 'lineGap', 'borderWidth', 'printScale'];
-    if (numberKeys.some(key => settings[key] === '' || !Number.isFinite(n(key)))) throw new Error('Bitte alle Größen vollständig eingeben.');
-    if (w < 40 || h < 40 || w > 200 || h > 200 || pad < 1 || n('qrSize') < 15 || n('nameFontSize') < 6 || n('positionFontSize') < 6 || n('borderWidth') < 0.1 || n('printScale') < 50 || n('printScale') > 150) throw new Error('Bitte gültige Maße und Schriftgrößen wählen.');
+    const errors = Object.values(badgeNumberErrors(settings));
+    if (errors.length) throw new Error(errors.join('\n'));
     if (w * n('printScale') / 100 > 200 || h * n('printScale') / 100 > 277) throw new Error('Das korrigierte Druckformat passt nicht auf A4.');
     for (const key of ['nameColor', 'positionColor', 'qrColor', 'borderColor']) {
         if (!/^#[0-9a-f]{6}$/i.test(settings[key])) throw new Error('Bitte gültige Farben wählen.');
