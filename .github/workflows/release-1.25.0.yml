@@ -1,0 +1,36 @@
+name: Publish 1.25.0
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - .github/workflows/release-1.25.0.yml
+permissions:
+  contents: write
+concurrency:
+  group: release-1.25.0
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify version and publish updater tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          for package in package.json server/package.json client/package.json; do
+            version=$(gh api "repos/${GH_REPO}/contents/${package}?ref=${GITHUB_SHA}" --jq .content | base64 --decode | jq -r .version)
+            if [ "$version" != "1.25.0" ]; then
+              echo "Skipping release: $package is $version."
+              exit 0
+            fi
+          done
+          if gh release view v1.25.0 >/dev/null 2>&1; then
+            echo "Release v1.25.0 already exists."
+            exit 0
+          fi
+          gh release create v1.25.0 --target "$GITHUB_SHA" \
+            --title "Version 1.25.0" \
+            --notes "Namensschilder mit persönlichem Buchungs-QR-Code, einstellbaren Maßen und Logo, Druck und PDF-Export. Administratoren können Anzeigenamen auch für LDAP-/SSO-Konten dauerhaft ändern. Der Tag v1.25.0 macht dieses Update für den integrierten Updater sichtbar."
