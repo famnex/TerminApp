@@ -36,6 +36,7 @@ Damit Bucher (z. B. Eltern, Kunden oder Schüler) dich leicht erkennen können, 
 2.  **Profilbild:** Lade ein freundliches Foto von dir hoch. Dieses wird den Kunden während des Buchungsprozesses angezeigt.
 3.  **Anzeigename:** Überprüfe, ob dein Name richtig geschrieben ist (z. B. *Dr. Max Mustermann* statt *m.mustermann*).
 4.  **Kennwort ändern:** Falls du ein lokales Konto nutzt, kannst du hier dein Passwort aktualisieren. (Bei LDAP- oder Portal-Logins wird das Passwort zentral verwaltet).
+5.  **Nachricht statt Buchungsmöglichkeit (optional):** Falls keine Online-Termine über das System gebucht werden sollen, kann hier eine Nachricht, Telefonnummer oder E-Mail hinterlegt werden. Diese wird anstelle des Buchungs-Buttons angezeigt und dein Profil bleibt für Besucher aktiv sichtbar.
 
 ---
 

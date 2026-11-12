@@ -18,6 +18,7 @@ Diese Datei dokumentiert die Struktur der Datenbank für die TerminApp.
 - `locationType`: STRING (Default: 'none' - Werte: 'none', 'room', 'custom', 'secretariat')
 - `isAdmin`: BOOLEAN (Default: false)
 - `bookingPageActive`: BOOLEAN (Default: false)
+- `bookingNotice`: TEXT (Nullable - Individuelle Nachricht oder Kontaktdaten anstelle einer Online-Buchung; Zahlenfolgen werden als tel:-Link, @-Adressen als mailto:-Link gerendert)
 - `createdAt`: DATETIME
 - `updatedAt`: DATETIME
 

@@ -3,7 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, User, Mail, Search, Share2, Building2 } from 'lucide-react';
+import { Loader2, User, Mail, Phone, Info, Search, Share2, Building2 } from 'lucide-react';
+import { parseBookingNotice } from '../lib/noticeUtils';
 import {
     Select,
     SelectContent,
@@ -60,7 +61,8 @@ const Directory = () => {
         const term = searchTerm.toLowerCase();
         const matchesSearch = (
             user.displayName?.toLowerCase().includes(term) ||
-            user.position?.toLowerCase().includes(term)
+            user.position?.toLowerCase().includes(term) ||
+            user.bookingNotice?.toLowerCase().includes(term)
         );
 
         const matchesDept = selectedDeptId === 'all' ||
@@ -112,12 +114,15 @@ const Directory = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredUsers.map(user => {
                     const hasAvailability = user.hasAvailability;
+                    const hasNotice = Boolean(user.bookingNotice && user.bookingNotice.trim());
+                    const isPersonActive = hasAvailability || hasNotice;
+                    const noticeInfo = hasNotice ? parseBookingNotice(user.bookingNotice) : null;
                     const positionItems = user.position
                         ? user.position.split(',').map(s => s.trim()).filter(Boolean)
                         : [];
 
                     return (
-                        <div key={user.id} className={`rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col items-center text-center transition-all group ${hasAvailability ? 'hover:shadow-md hover:border-primary/50' : 'opacity-70 bg-muted/30'}`}>
+                        <div key={user.id} className={`rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col items-center text-center transition-all group ${isPersonActive ? 'hover:shadow-md hover:border-primary/50' : 'opacity-70 bg-muted/30'}`}>
 
                             {/* Profile Image */}
                             <div className="w-24 h-24 mb-4 rounded-full overflow-hidden border-2 border-muted group-hover:border-primary/20 transition-colors bg-muted flex items-center justify-center">
@@ -163,15 +168,42 @@ const Directory = () => {
                                 <div className="h-6 mb-6"></div> // Spacer to keep alignment if email hidden
                             )}
 
-                            <Button asChild={hasAvailability} disabled={!hasAvailability} variant={hasAvailability ? "default" : "secondary"} className="w-full mt-auto">
-                                {hasAvailability ? (
-                                    <Link to={`/book/${user.id}`}>
-                                        Termin buchen
-                                    </Link>
+                            {/* Booking Action or Custom Notice */}
+                            {noticeInfo ? (
+                                noticeInfo.type === 'phone' ? (
+                                    <Button asChild variant="default" className="w-full mt-auto gap-2" title={`Anrufen: ${noticeInfo.display}`}>
+                                        <a href={noticeInfo.href}>
+                                            <Phone size={15} />
+                                            <span className="truncate">{noticeInfo.display}</span>
+                                        </a>
+                                    </Button>
+                                ) : noticeInfo.type === 'email' ? (
+                                    <Button asChild variant="default" className="w-full mt-auto gap-2" title={`E-Mail senden: ${noticeInfo.display}`}>
+                                        <a href={noticeInfo.href}>
+                                            <Mail size={15} />
+                                            <span className="truncate">{noticeInfo.display}</span>
+                                        </a>
+                                    </Button>
                                 ) : (
-                                    <span>Keine Termine verfügbar</span>
-                                )}
-                            </Button>
+                                    <div
+                                        className="w-full mt-auto min-h-[40px] px-3 py-2 rounded-md bg-secondary text-secondary-foreground text-xs sm:text-sm font-medium border flex items-center justify-center gap-1.5 text-center shadow-xs"
+                                        title={noticeInfo.display}
+                                    >
+                                        <Info size={15} className="shrink-0 text-primary" />
+                                        <span className="line-clamp-2">{noticeInfo.display}</span>
+                                    </div>
+                                )
+                            ) : (
+                                <Button asChild={hasAvailability} disabled={!hasAvailability} variant={hasAvailability ? "default" : "secondary"} className="w-full mt-auto">
+                                    {hasAvailability ? (
+                                        <Link to={`/book/${user.id}`}>
+                                            Termin buchen
+                                        </Link>
+                                    ) : (
+                                        <span>Keine Termine verfügbar</span>
+                                    )}
+                                </Button>
+                            )}
                         </div>
                     )
                 })}

@@ -137,6 +137,13 @@ sequelize.sync().then(async () => {
         // Safe to ignore
     }
 
+    try {
+        await sequelize.query("ALTER TABLE Users ADD COLUMN bookingNotice TEXT DEFAULT NULL");
+        console.log('Database upgrade: Added bookingNotice column to Users table');
+    } catch (dbErr) {
+        // Safe to ignore if column already exists
+    }
+
     // Start Jobs
     const startReminderJob = require('./jobs/reminders');
     startReminderJob();

@@ -149,6 +149,10 @@ Für Administratoren gibt es mächtige Werkzeuge, um Einstellungen und Termine f
 *   **Kompakte Terminzahl pro Benutzer:** In der Benutzerliste wird für jeden Mitarbeiter direkt und platzsparend die reine Anzahl an gebuchten Terminen über dieses System angezeigt.
 *   **Detail-Drilldown bei Klick:** Die Status-Aufschlüsselung (wie viele Termine stattgefunden haben, noch anstehend oder storniert sind) sowie die Liste der Buchungen erscheint bei einem Klick auf die Terminzahl in einem aufgeräumten Dialogfenster.
 *   **Optimiertes Tabellenlayout:** Positionstitel und E-Mail-Adressen brechen und kürzen sich responsive ab, sodass die Benutzertabelle auch bei langen Bezeichnungen innerhalb der Ansicht bleibt und kein störender horizontaler Scrollbalken entsteht.
+*   **Nachricht statt Buchungsmöglichkeit (Telefon, E-Mail oder Text):**
+    *   Administratoren können für Benutzer eine individuelle Nachricht anstelle einer Online-Buchungsmöglichkeit festlegen.
+    *   **Automatische Verlinkung:** Zahlenfolgen werden automatisch als Telefon-Link (`tel:`) und E-Mail-Adressen (`@`) als Mail-Link (`mailto:`) formatiert.
+    *   **Aktiv-Status:** Der Benutzer wird in der öffentlichen Übersicht als aktiv dargestellt, auch wenn keine Kalender-Verfügbarkeiten eingetragen sind.
 *   Die Benutzerliste ist standardmäßig **alphabetisch nach Anzeigename** sortiert.
 *   Über das integrierte **Suchfeld** kann in Echtzeit nach Name, Benutzername, E-Mail-Adresse, Position/Funktion, Abteilungszugehörigkeit oder Terminstatus gefiltert werden.
 

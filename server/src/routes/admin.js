@@ -11,7 +11,7 @@ router.use(requireAdmin);
 router.get('/users', async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'username', 'displayName', 'email', 'isAdmin', 'authMethod', 'position', 'location', 'locationType', 'profileImage', 'showEmail', 'bookingPageActive'],
+            attributes: ['id', 'username', 'displayName', 'email', 'isAdmin', 'authMethod', 'position', 'location', 'locationType', 'profileImage', 'showEmail', 'bookingPageActive', 'bookingNotice'],
             include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
         });
 
@@ -99,7 +99,8 @@ router.post('/users', async (req, res) => {
             email,
             isAdmin: isAdmin || false,
             authMethod: authMethod || 'local',
-            bookingPageActive: bookingPageActive !== undefined ? bookingPageActive : false
+            bookingPageActive: bookingPageActive !== undefined ? bookingPageActive : false,
+            bookingNotice: req.body.bookingNotice ? req.body.bookingNotice.trim() : null
         });
 
         res.status(201).json({
@@ -138,6 +139,9 @@ router.put('/users/:id', async (req, res) => {
         user.email = email || user.email;
         if (isAdmin !== undefined) user.isAdmin = isAdmin;
         if (bookingPageActive !== undefined) user.bookingPageActive = bookingPageActive;
+        if (req.body.bookingNotice !== undefined) {
+            user.bookingNotice = req.body.bookingNotice && req.body.bookingNotice.trim() !== '' ? req.body.bookingNotice.trim() : null;
+        }
 
         // New Profile Fields
         user.position = req.body.position; // Allow empty string to clear

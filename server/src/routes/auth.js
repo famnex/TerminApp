@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_change_me';
 
 const getFullUserData = async (userId) => {
     const user = await User.findByPk(userId, {
-        attributes: ['id', 'username', 'displayName', 'isAdmin', 'authMethod', 'email', 'position', 'location', 'locationType', 'profileImage', 'showEmail', 'bookingPageActive'],
+        attributes: ['id', 'username', 'displayName', 'isAdmin', 'authMethod', 'email', 'position', 'location', 'locationType', 'profileImage', 'showEmail', 'bookingPageActive', 'bookingNotice'],
         include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
     });
     return user ? user.toJSON() : null;
@@ -305,6 +305,9 @@ router.put('/profile', async (req, res) => {
         if (profileImage !== undefined) user.profileImage = profileImage;
         if (showEmail !== undefined) user.showEmail = showEmail;
         if (bookingPageActive !== undefined) user.bookingPageActive = bookingPageActive;
+        if (req.body.bookingNotice !== undefined) {
+            user.bookingNotice = req.body.bookingNotice && req.body.bookingNotice.trim() !== '' ? req.body.bookingNotice.trim() : null;
+        }
 
         await user.save();
 

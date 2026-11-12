@@ -33,7 +33,8 @@ const Profile = () => {
         showEmail: true,
         profileImage: '',
         departmentId: '',
-        bookingPageActive: false
+        bookingPageActive: false,
+        bookingNotice: ''
     });
 
     const [positionItems, setPositionItems] = useState([]);
@@ -92,7 +93,8 @@ const Profile = () => {
                     showEmail: currentUserData.showEmail !== false,
                     profileImage: currentUserData.profileImage || '',
                     departmentId: currentDeptId,
-                    bookingPageActive: currentUserData.bookingPageActive === true
+                    bookingPageActive: currentUserData.bookingPageActive === true,
+                    bookingNotice: currentUserData.bookingNotice || ''
                 });
             } catch (err) {
                 console.error("Failed to load profile data", err);
@@ -457,6 +459,21 @@ const Profile = () => {
                                 checked={formData.bookingPageActive}
                                 onCheckedChange={checked => handleSwitchChange('bookingPageActive', checked)}
                             />
+                        </div>
+
+                        {/* Custom Booking Notice / Message */}
+                        <div className="space-y-2 p-4 rounded-lg border bg-muted/20">
+                            <Label htmlFor="bookingNotice">Nachricht statt Buchungsmöglichkeit (Optional)</Label>
+                            <Input
+                                id="bookingNotice"
+                                name="bookingNotice"
+                                value={formData.bookingNotice || ''}
+                                onChange={handleInputChange}
+                                placeholder="z.B. 06621 123456 oder kontakt@schule.de oder Bitte im Sekretariat melden"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Wird anstelle der Online-Terminbuchung auf deiner Karte angezeigt. Zahlenfolgen werden automatisch als Telefon-Link (<span className="font-mono">tel:</span>) und E-Mail-Adressen (@) als Mail-Link (<span className="font-mono">mailto:</span>) dargestellt. Dein Profil wird auf der Startseite als aktiv angezeigt.
+                            </p>
                         </div>
                     </CardContent>
                     <CardFooter className="flex justify-end gap-2 border-t pt-6">

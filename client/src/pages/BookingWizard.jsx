@@ -11,6 +11,7 @@ import { Label } from "../components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "../components/ui/card"
 import { cn } from "../lib/utils"
 import { toast } from 'sonner';
+import { parseBookingNotice } from '../lib/noticeUtils';
 
 const BookingWizard = () => {
     const { userId } = useParams();
@@ -249,6 +250,60 @@ const BookingWizard = () => {
                     <CardContent className="text-center text-muted-foreground pb-6">
                         {errorMsg}
                     </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    if (expert?.bookingNotice && expert.bookingNotice.trim()) {
+        const noticeInfo = parseBookingNotice(expert.bookingNotice);
+        return (
+            <div className="min-h-screen bg-slate-50/50 py-12 px-4 font-sans text-slate-900 flex items-center justify-center">
+                <Card className="max-w-md w-full shadow-lg text-center animate-fade-in-up">
+                    <CardHeader className="flex flex-col items-center pb-2">
+                        {expert.profileImage ? (
+                            <div className="w-20 h-20 mb-3 rounded-full overflow-hidden border-2 border-primary/20 shadow-sm bg-muted">
+                                <img src={expert.profileImage} alt={expert.displayName} className="w-full h-full object-cover" />
+                            </div>
+                        ) : (
+                            <div className="w-20 h-20 mb-3 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 border-2">
+                                <User size={36} />
+                            </div>
+                        )}
+                        <CardTitle className="text-2xl">{expert.displayName}</CardTitle>
+                        {expert.position && <CardDescription className="text-sm mt-1">{expert.position}</CardDescription>}
+                    </CardHeader>
+                    <CardContent className="space-y-4 py-6">
+                        <p className="text-sm text-muted-foreground">
+                            Für diesen Experten ist keine direkte Online-Terminbuchung eingerichtet. Bitte nutzen Sie folgende Kontaktmöglichkeit:
+                        </p>
+                        <div className="pt-2">
+                            {noticeInfo.type === 'phone' ? (
+                                <Button asChild size="lg" className="w-full gap-2 text-base">
+                                    <a href={noticeInfo.href}>
+                                        <Phone className="w-5 h-5" /> {noticeInfo.display}
+                                    </a>
+                                </Button>
+                            ) : noticeInfo.type === 'email' ? (
+                                <Button asChild size="lg" className="w-full gap-2 text-base">
+                                    <a href={noticeInfo.href}>
+                                        <Mail className="w-5 h-5" /> {noticeInfo.display}
+                                    </a>
+                                </Button>
+                            ) : (
+                                <div className="p-4 rounded-lg bg-secondary text-secondary-foreground border font-medium text-sm">
+                                    {noticeInfo.display}
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                    <CardFooter className="justify-center border-t pt-4">
+                        <Button variant="ghost" asChild>
+                            <Link to="/" className="flex items-center gap-2">
+                                <ArrowLeft className="w-4 h-4" /> Zurück zur Übersicht
+                            </Link>
+                        </Button>
+                    </CardFooter>
                 </Card>
             </div>
         );

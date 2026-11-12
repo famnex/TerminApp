@@ -88,7 +88,8 @@ const AdminUserList = () => {
         location: '',
         showEmail: true,
         profileImage: '',
-        bookingPageActive: false
+        bookingPageActive: false,
+        bookingNotice: ''
     });
 
     const navigate = useNavigate();
@@ -129,10 +130,14 @@ const AdminUserList = () => {
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
+        setFormData(prev => {
+            const nextVal = type === 'checkbox' ? checked : value;
+            const updated = { ...prev, [name]: nextVal };
+            if (name === 'bookingNotice' && typeof value === 'string' && value.trim()) {
+                updated.bookingPageActive = true;
+            }
+            return updated;
+        });
     };
 
     const handleDeptSortUser = (userId) => {
@@ -162,7 +167,8 @@ const AdminUserList = () => {
             location: '',
             showEmail: true,
             profileImage: '',
-            bookingPageActive: false
+            bookingPageActive: false,
+            bookingNotice: ''
         });
         setDeptFormData({ name: '', description: '', userIds: [] });
         setError(null);
@@ -318,7 +324,8 @@ const AdminUserList = () => {
             location: userToEdit.location || '',
             showEmail: userToEdit.showEmail !== false, // Default to true if undefined
             profileImage: userToEdit.profileImage || '',
-            bookingPageActive: userToEdit.bookingPageActive === true
+            bookingPageActive: userToEdit.bookingPageActive === true,
+            bookingNotice: userToEdit.bookingNotice || ''
         });
     };
 
@@ -330,6 +337,7 @@ const AdminUserList = () => {
             const matchesUsername = (u.username || '').toLowerCase().includes(term);
             const matchesEmail = (u.email || '').toLowerCase().includes(term);
             const matchesPosition = (u.position || '').toLowerCase().includes(term);
+            const matchesNotice = (u.bookingNotice || '').toLowerCase().includes(term);
             const matchesDept = u.Departments && u.Departments.some(d => (d.name || '').toLowerCase().includes(term));
             const totalBookings = u.bookingStats?.total || 0;
             const matchesBookings = (term === 'termine' || term === 'termin') 
@@ -337,7 +345,7 @@ const AdminUserList = () => {
                 : (term === 'keine termine' || term === '0 termine') 
                     ? totalBookings === 0 
                     : (totalBookings.toString() + ' termine').includes(term);
-            return matchesName || matchesUsername || matchesEmail || matchesPosition || matchesDept || matchesBookings;
+            return matchesName || matchesUsername || matchesEmail || matchesPosition || matchesNotice || matchesDept || matchesBookings;
         })
         .sort((a, b) => 
             (a.displayName || '').localeCompare(b.displayName || '', 'de', { sensitivity: 'base' }) ||
@@ -533,17 +541,24 @@ const AdminUserList = () => {
                                                 <span className="font-mono text-xs text-muted-foreground uppercase">{u.authMethod}</span>
                                             </TableCell>
                                             <TableCell className="py-3 whitespace-nowrap">
-                                                {u.bookingPageActive ? (
-                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                        <span className="h-1.5 w-1.5 rounded-full bg-green-500"></span>
-                                                        Aktiv
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                        <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span>
-                                                        Inaktiv
-                                                    </span>
-                                                )}
+                                                <div className="flex flex-col gap-0.5">
+                                                    {u.bookingPageActive ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 w-fit">
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                                            Aktiv
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 w-fit">
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                                            Inaktiv
+                                                        </span>
+                                                    )}
+                                                    {u.bookingNotice && (
+                                                        <span className="text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 truncate max-w-[120px] w-fit font-mono" title={`Nachricht statt Buchung: ${u.bookingNotice}`}>
+                                                            {u.bookingNotice}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </TableCell>
                                             <TableCell className="py-3 text-center whitespace-nowrap">
                                                 <button
@@ -775,6 +790,19 @@ const AdminUserList = () => {
                                 <div className="flex items-center space-x-2 pt-2">
                                     <input type="checkbox" id="bookingPageActive" name="bookingPageActive" checked={formData.bookingPageActive} onChange={handleInputChange} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 h-4 w-4" />
                                     <label htmlFor="bookingPageActive" className="text-sm font-medium leading-none">Buchungsseite aktivieren</label>
+                                </div>
+                                <div className="space-y-2 pt-2 border-t">
+                                    <Label htmlFor="bookingNotice">Nachricht statt Buchungsmöglichkeit (Optional)</Label>
+                                    <Input
+                                        id="bookingNotice"
+                                        name="bookingNotice"
+                                        value={formData.bookingNotice}
+                                        onChange={handleInputChange}
+                                        placeholder="z.B. 06621 123456 oder kontakt@schule.de oder Persönliche Vereinbarung"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Wird anstelle des Buchungs-Buttons angezeigt. Zahlenfolgen werden als Telefon-Link (<span className="font-mono">tel:</span>) und E-Mail-Adressen (@) als Mail-Link (<span className="font-mono">mailto:</span>) dargestellt.
+                                    </p>
                                 </div>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-2">
@@ -1032,6 +1060,19 @@ const AdminUserList = () => {
                                 <div className="flex items-center space-x-2 pt-2">
                                     <input type="checkbox" id="editBookingPageActive" name="bookingPageActive" checked={formData.bookingPageActive} onChange={handleInputChange} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 h-4 w-4" />
                                     <label htmlFor="editBookingPageActive" className="text-sm font-medium leading-none">Buchungsseite aktivieren</label>
+                                </div>
+                                <div className="space-y-2 pt-2 border-t">
+                                    <Label htmlFor="editBookingNotice">Nachricht statt Buchungsmöglichkeit (Optional)</Label>
+                                    <Input
+                                        id="editBookingNotice"
+                                        name="bookingNotice"
+                                        value={formData.bookingNotice}
+                                        onChange={handleInputChange}
+                                        placeholder="z.B. 06621 123456 oder kontakt@schule.de oder Persönliche Vereinbarung"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Wird anstelle des Buchungs-Buttons angezeigt. Zahlenfolgen werden als Telefon-Link (<span className="font-mono">tel:</span>) und E-Mail-Adressen (@) als Mail-Link (<span className="font-mono">mailto:</span>) dargestellt.
+                                    </p>
                                 </div>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-2">

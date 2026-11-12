@@ -56,6 +56,10 @@ const User = sequelize.define('User', {
     bookingPageActive: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
+    },
+    bookingNotice: {
+        type: DataTypes.TEXT,
+        allowNull: true,
     }
 });
 

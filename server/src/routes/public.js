@@ -24,7 +24,7 @@ router.get('/users', async (req, res) => {
         const { Op } = require('sequelize');
         const users = await User.findAll({
             where: { bookingPageActive: true },
-            attributes: ['id', 'displayName', 'email', 'position', 'profileImage', 'showEmail'],
+            attributes: ['id', 'displayName', 'email', 'position', 'profileImage', 'showEmail', 'bookingNotice'],
             include: [
                 {
                     model: Availability,
@@ -125,7 +125,7 @@ router.get('/settings', async (req, res) => {
 router.get('/users/:id', async (req, res) => {
     try {
         const user = await User.findByPk(req.params.id, {
-            attributes: ['id', 'displayName', 'position', 'profileImage', 'bookingPageActive']
+            attributes: ['id', 'displayName', 'position', 'profileImage', 'bookingPageActive', 'bookingNotice']
         });
         if (!user || !user.bookingPageActive) {
             return res.status(403).json({ error: 'Diese Buchungsseite ist derzeit deaktiviert.' });
