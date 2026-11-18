@@ -355,7 +355,7 @@ const Settings = () => {
                                 {renderField('app_title', 'Titel der Anwendung (Header)', 'text', 'TerminApp')}
                                 {renderField('primary_color', 'Primärfarbe (App-Design)', 'color', '#7c3aed')}
                                 {renderField('reminder_lead_time', 'Erinnerungs-Vorlaufzeit (in Minuten)', 'number', '10')}
-                                {renderField('min_booking_notice_hours', 'Minimale Buchungsvorlaufzeit (in Stunden)', 'number', '0')}
+                                <p className="text-sm text-muted-foreground">Die Buchungsfrist legt jede Person unter <strong>Verfügbarkeiten → Einstellungen</strong> für ihre eigenen Termine fest.</p>
 
                                 <div className="space-y-2 pt-4 border-t">
                                     <Label>Schullogo (wird im Header angezeigt)</Label>

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { User, Topic, Booking, Availability, Department } = require('../models');
 const { getAvailableSlots } = require('../utils/scheduler');
+const { isBookingOpen } = require('../utils/bookingDeadline');
 const { addMinutes, parseISO } = require('date-fns');
 const mailService = require('../services/mail');
 
@@ -192,7 +193,13 @@ router.post('/book', async (req, res) => {
             return res.status(403).json({ error: 'Diese Buchungsseite ist derzeit deaktiviert.' });
         }
 
+        if (typeof slotTimestamp !== 'string') return res.status(400).json({ error: 'Bitte einen gültigen Termin auswählen.' });
         const startTime = parseISO(slotTimestamp);
+        if (!Number.isFinite(startTime.getTime())) return res.status(400).json({ error: 'Bitte einen gültigen Termin auswählen.' });
+        // Read the current provider setting and server time, including for stale forms.
+        if (!isBookingOpen(startTime, user.bookingDeadline)) {
+            return res.status(409).json({ code: 'BOOKING_DEADLINE_PASSED', error: 'Die Buchungsfrist für diesen Termin ist abgelaufen. Bitte wählen Sie einen späteren Termin.' });
+        }
         const endTime = addMinutes(startTime, topic.durationMinutes);
 
         // Create Booking

@@ -1,9 +1,10 @@
-const { Availability, Booking, Topic, TimeOff, GlobalSettings } = require('../models');
+const { Availability, Booking, Topic, TimeOff, User } = require('../models');
 const { Op } = require('sequelize');
+const { isBookingOpen } = require('./bookingDeadline');
 const {
     startOfDay, endOfDay, addDays, isBefore, isAfter,
     setHours, setMinutes, addMinutes, format, getDay,
-    getISOWeek, parseISO, isSameDay, areIntervalsOverlapping, addHours
+    getISOWeek, parseISO, isSameDay, areIntervalsOverlapping
 } = require('date-fns');
 
 /**
@@ -21,19 +22,9 @@ async function getAvailableSlots(userId, startDateStr, endDateStr, topicId) {
     if (!topic) throw new Error('Topic not found');
     const duration = topic.durationMinutes;
 
-    // Fetch Global Settings for Min Notice
-    let minNoticeHours = 0;
-    try {
-        const setting = await GlobalSettings.findByPk('min_booking_notice_hours');
-        if (setting && setting.value) {
-            minNoticeHours = parseInt(setting.value, 10);
-        }
-    } catch (err) {
-        console.error('Error fetching min_booking_notice_hours:', err);
-    }
-
+    const user = await User.findByPk(userId, { attributes: ['bookingDeadline'] });
+    if (!user) throw new Error('User not found');
     const now = new Date();
-    const minSlotTime = addHours(now, minNoticeHours);
 
     // 1. Fetch Availability Rules (including linked topics)
     const availabilities = await Availability.findAll({
@@ -132,8 +123,8 @@ async function getAvailableSlots(userId, startDateStr, endDateStr, topicId) {
                 // If slot exceeds rule end time, stop
                 if (isAfter(slotEnd, ruleEnd)) break;
 
-                // Check for min notice
-                if (isBefore(slotStart, minSlotTime)) {
+                // Apply the same personal cutoff that is enforced when submitting a booking.
+                if (!isBookingOpen(slotStart, user.bookingDeadline, now)) {
                     slotStart = addMinutes(slotStart, duration);
                     continue;
                 }

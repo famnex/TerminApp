@@ -1,6 +1,27 @@
 const express = require('express');
 const router = express.Router();
-const { Availability, Topic } = require('../models');
+const { Availability, Topic, User } = require('../models');
+
+const { BOOKING_DEADLINES } = require('../utils/bookingDeadline');
+
+// Settings are scoped exclusively to the authenticated account, never a submitted ID.
+router.get('/settings', async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id, { attributes: ['bookingDeadline'] });
+        if (!user) return res.sendStatus(404);
+        res.json({ bookingDeadline: user.bookingDeadline });
+    } catch (err) { res.status(500).json({ error: 'Buchungsfrist konnte nicht geladen werden.' }); }
+});
+router.put('/settings', async (req, res) => {
+    try {
+        const { bookingDeadline } = req.body;
+        if (!BOOKING_DEADLINES.includes(bookingDeadline)) return res.status(400).json({ error: 'Bitte eine der drei Buchungsfristen auswählen.' });
+        const user = await User.findByPk(req.user.id);
+        if (!user) return res.sendStatus(404);
+        await user.update({ bookingDeadline });
+        res.json({ bookingDeadline: user.bookingDeadline });
+    } catch (err) { res.status(500).json({ error: 'Buchungsfrist konnte nicht gespeichert werden.' }); }
+});
 
 // GET /api/availability/mine
 // Hides completely past specific_date availabilities by default unless includePast=true is specified

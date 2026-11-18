@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const bcrypt = require('bcrypt');
+const { DEFAULT_BOOKING_DEADLINE, BOOKING_DEADLINES } = require('../utils/bookingDeadline');
 
 const User = sequelize.define('User', {
     username: {
@@ -52,6 +53,12 @@ const User = sequelize.define('User', {
     isAdmin: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
+    },
+    bookingDeadline: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: DEFAULT_BOOKING_DEADLINE,
+        validate: { isIn: [BOOKING_DEADLINES] },
     },
     bookingPageActive: {
         type: DataTypes.BOOLEAN,

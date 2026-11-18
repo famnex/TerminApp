@@ -65,6 +65,7 @@ if (fs.existsSync(publicDir)) {
 // Sync Database and Start Server
 sequelize.sync().then(async () => {
     console.log('Database synced');
+    await require('./migrations/bookingDeadline')(sequelize);
 
     // Preserve admin-assigned names when external authentication refreshes profiles.
     const queryInterface = sequelize.getQueryInterface();

@@ -165,3 +165,15 @@ Unter **Einstellungen → Namensschilder** gibt es einen eigenen Tab mit Live-Vo
 Beispielname und Beispiel-Zusatz testen das Layout, ohne Benutzerprofile zu ändern. Erst **Schild-Einstellungen speichern** übernimmt die Vorlage für alle Benutzer. Auch in „Mein Profil“ und beim Admin-Druck anderer Benutzer wird dieselbe Vorlage verwendet.
 
 **Testdruck mit Kontrollmaß** druckt zusätzlich eine 50-mm-Linie. Wählen Sie A4, 100 % bzw. „Tatsächliche Größe“ und keine Kopf-/Fußzeilen. Eine Bildschirmvorschau ist kein physischer Maßstab. Messen Sie das Schild außen am Rahmen und bei Bedarf die Kontrolllinie. Die Druckkorrektur steht standardmäßig auf 100 % und wirkt gleichermaßen auf PDF und direkten Druck; die Kontrolllinie bleibt davon unabhängig 50 mm lang. Bei verbleibenden Abweichungen gilt: neue Korrektur = bisherige Korrektur × Sollmaß / gemessenes Maß. Druckertreiber-Einstellungen lassen sich durch die App nicht erzwingen.
+
+## Persönliche Buchungsfrist (ab 1.28.0)
+
+Unter **Verfügbarkeiten → Einstellungen** bestimmt jede Person selbst, wie lange ihre Termine buchbar sind:
+
+- **Bis zum Beginn des Slots:** Buchbar, solange der Termin noch nicht begonnen hat.
+- **24 Stunden vorher:** Bei einem Mittwochstermin um 15 Uhr ist eine Buchung bis Dienstag um 15 Uhr möglich.
+- **48 Stunden vorher (Standard):** Bei einem Mittwochstermin um 15 Uhr ist eine Buchung bis Montag um 15 Uhr möglich.
+
+Es zählen tatsächlich verstrichene Stunden, auch über Sommer-/Winterzeitwechsel hinweg. Bestehende und neue Konten erhalten standardmäßig 48 Stunden Vorlauf. Nachträglich gespeicherte persönliche Einstellungen werden bei Updates und Neustarts beibehalten. Bereits gebuchte Termine werden durch eine Änderung nicht storniert.
+
+Die Einstellung ersetzt die frühere globale Vorlaufzeit in Stunden. Slots außerhalb der persönlichen Buchungsfrist werden nicht mehr angeboten; auch ein vor Ablauf geöffnetes Buchungsformular kann danach keine Buchung mehr abschließen. Die Einstellung kann nur für das jeweils angemeldete Konto gespeichert werden.

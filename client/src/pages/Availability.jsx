@@ -1,7 +1,8 @@
+import AvailabilitySettings from '../components/AvailabilitySettings';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import { Calendar as CalendarIcon, Clock, Plus, Trash2, Edit2, ChevronLeft, Repeat, CalendarDays, AlertCircle, CalendarOff, Palmtree, Tag, Globe, Lock, History, EyeOff } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Trash2, Edit2, ChevronLeft, Repeat, CalendarDays, AlertCircle, CalendarOff, Palmtree, Tag, Globe, Lock, History, EyeOff, Settings as SettingsIcon } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -26,7 +27,7 @@ const Availability = () => {
     const [includePastSpecificDates, setIncludePastSpecificDates] = useState(false);
 
     // UI State
-    const [activeTab, setActiveTab] = useState('weekly'); // weekly, rotating, specific, absences
+    const [activeTab, setActiveTab] = useState('weekly'); // weekly, rotating, specific, absences, settings
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
 
@@ -255,9 +256,20 @@ const Availability = () => {
                 >
                     <Palmtree size={16} /> Abwesenheiten
                 </button>
+                <div className="w-px bg-border my-2 mx-1 hidden md:block opacity-20" />
+                <button
+                    onClick={() => setActiveTab('settings')}
+                    className={cn(
+                        "flex items-center justify-center gap-2 flex-1 md:flex-none px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap",
+                        activeTab === 'settings' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10'
+                    )}
+                >
+                    <SettingsIcon size={16} /> Einstellungen
+                </button>
             </div>
 
             <Card className="min-h-[500px]">
+                {activeTab === 'settings' && <AvailabilitySettings />}
                 {/* WEEKLY & ROTATING VIEW */}
                 {(activeTab === 'weekly' || activeTab === 'rotating') && (
                     <div className="divide-y divide-border/50">
