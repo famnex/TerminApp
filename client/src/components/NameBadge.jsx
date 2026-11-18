@@ -35,7 +35,7 @@ export default function NameBadge({ userId }) {
             {!person && !error && <p>Namensschild wird geladen …</p>}
             {person && <>
                 <div className="grid sm:grid-cols-2 gap-4">
-                    <label className="space-y-2">Anrede<select aria-label="Anrede" className="w-full rounded border p-2 bg-background" value={person.salutation} onChange={e => setPerson({ ...person, salutation: e.target.value })}><option>Herr</option><option>Frau</option></select></label>
+                    <label className="space-y-2">Anrede<select aria-label="Anrede" className="w-full rounded border p-2 bg-background" value={person.salutation} onChange={e => setPerson({ ...person, salutation: e.target.value })}><option value="">Keine Anrede</option><option>Frau</option><option>Herr</option></select></label>
                     <label className="space-y-2">Nachname<Input value={badgeSurname(person.displayName)} readOnly /></label>
                 </div>
                 <p className="text-xs text-muted-foreground">Der Nachname wird aus dem Anzeigenamen bis zum ersten Komma übernommen.</p>

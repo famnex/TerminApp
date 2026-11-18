@@ -45,12 +45,13 @@ router.use('/users/:id', wrap(async (req, res, next) => {
 }));
 router.get('/users/:id', wrap(async (req, res) => {
     const user = req.badgeUser;
+    const saved = await read(`name_badge_user_${user.id}`, {});
     res.json({ id: user.id, displayName: user.displayName, bookingPageActive: user.bookingPageActive,
-        ...await read(`name_badge_user_${user.id}`, { salutation: 'Herr', position: 'Lehrer' }) });
+        position: 'Lehrer', ...saved, salutation: ['Herr', 'Frau'].includes(saved.salutation) ? saved.salutation : '' });
 }));
 router.put('/users/:id', wrap(async (req, res) => {
     const { salutation, position } = req.body;
-    if (!['Herr', 'Frau'].includes(salutation) || typeof position !== 'string' || !position.trim() || position.trim().length > 100) {
+    if (!['', 'Herr', 'Frau'].includes(salutation) || typeof position !== 'string' || !position.trim() || position.trim().length > 100) {
         return res.status(400).json({ error: 'Bitte Anrede und einen Zusatz mit maximal 100 Zeichen angeben.' });
     }
     await save(`name_badge_user_${req.badgeUser.id}`, { salutation, position: position.trim() });

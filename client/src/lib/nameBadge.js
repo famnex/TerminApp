@@ -62,7 +62,7 @@ export async function renderBadge(settings, person) {
     const nameSize = n('nameFontSize') * 25.4 / 72;
     const positionSize = n('positionFontSize') * 25.4 / 72;
     const nameFont = `bold ${nameSize}px Arial, sans-serif`, positionFont = `${positionSize}px Arial, sans-serif`;
-    const names = linesFor(`${person.salutation} ${badgeSurname(person.displayName)}`, nameFont);
+    const names = linesFor([person.salutation, badgeSurname(person.displayName)].filter(Boolean).join(' '), nameFont);
     const positions = linesFor(person.position || '', positionFont);
     const placement = placeBadgeText({ nameLines: names.length, positionLines: positions.length, nameSize, positionSize, gap: n('lineGap'), rowY, qrSize, top: textTop, bottom: h - pad });
     let y = placement.y;
