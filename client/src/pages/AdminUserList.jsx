@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import NameBadge from '../components/NameBadge';
+import BulkNameBadges from '../components/BulkNameBadges';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
@@ -29,6 +30,8 @@ import { toast } from 'sonner';
 
 const AdminUserList = () => {
     const [badgeUser, setBadgeUser] = useState(null);
+    const [bulkBadgeUsers, setBulkBadgeUsers] = useState(null);
+    const [selectedBadgeIds, setSelectedBadgeIds] = useState([]);
     const [users, setUsers] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -364,6 +367,12 @@ const AdminUserList = () => {
                     {badgeUser && <NameBadge key={badgeUser.id} userId={badgeUser.id} />}
                 </DialogContent>
             </Dialog>
+            <Dialog open={!!bulkBadgeUsers} onOpenChange={open => { if (!open) setBulkBadgeUsers(null); }}>
+                <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+                    <DialogHeader><DialogTitle>Namensschilder im Sammeldruck</DialogTitle><DialogDescription>Abstände und Startposition einstellen, Druckbogen prüfen und drucken oder als PDF exportieren.</DialogDescription></DialogHeader>
+                    {bulkBadgeUsers && <BulkNameBadges users={bulkBadgeUsers} />}
+                </DialogContent>
+            </Dialog>
             {/* Header */}
             <div>
                 <Button variant="ghost" onClick={() => navigate('/dashboard')} className="pl-0 text-muted-foreground hover:text-primary mb-6">
@@ -484,10 +493,15 @@ const AdminUserList = () => {
                             )}
                         </CardHeader>
                         <CardContent>
+                            <div className="flex flex-wrap items-center gap-2 mb-4">
+                                <Button variant="outline" disabled={!users.length} onClick={() => setBulkBadgeUsers([...users].sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'de')))}><IdCard className="mr-2 h-4 w-4" />Alle Schilder ({users.length})</Button>
+                                <Button variant="outline" disabled={!users.some(u => selectedBadgeIds.includes(u.id))} onClick={() => setBulkBadgeUsers(users.filter(u => selectedBadgeIds.includes(u.id)).sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'de')))}>Auswahl drucken ({users.filter(u => selectedBadgeIds.includes(u.id)).length})</Button>
+                                {selectedBadgeIds.length > 0 && <Button variant="ghost" onClick={() => setSelectedBadgeIds([])}>Auswahl aufheben</Button>}
+                            </div>
                             <Table className="w-full table-fixed">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Benutzer</TableHead>
+                                        <TableHead><span className="flex items-center gap-2"><Checkbox aria-label="Alle angezeigten Benutzer auswählen" checked={filteredUsers.length > 0 && filteredUsers.every(u => selectedBadgeIds.includes(u.id)) ? true : filteredUsers.some(u => selectedBadgeIds.includes(u.id)) ? 'indeterminate' : false} onCheckedChange={checked => setSelectedBadgeIds(ids => checked ? [...new Set([...ids, ...filteredUsers.map(u => u.id)])] : ids.filter(id => !filteredUsers.some(u => u.id === id)))} />Benutzer</span></TableHead>
                                         <TableHead className="hidden md:table-cell w-[22%]">Email</TableHead>
                                         <TableHead className="hidden lg:table-cell w-28">Rolle</TableHead>
                                         <TableHead className="hidden xl:table-cell w-20">Auth</TableHead>
@@ -500,7 +514,8 @@ const AdminUserList = () => {
                                     {filteredUsers.map((u) => (
                                         <TableRow key={u.id} className="group">
                                             <TableCell className="font-medium py-3">
-                                                <div className="flex items-center gap-3 min-w-0">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <Checkbox aria-label={`Namensschild für ${u.displayName} auswählen`} checked={selectedBadgeIds.includes(u.id)} onCheckedChange={checked => setSelectedBadgeIds(ids => checked ? [...new Set([...ids, u.id])] : ids.filter(id => id !== u.id))} />
                                                     {u.profileImage ? (
                                                         <img src={u.profileImage} alt={u.displayName} className="w-9 h-9 rounded-full object-cover border shrink-0" />
                                                     ) : (

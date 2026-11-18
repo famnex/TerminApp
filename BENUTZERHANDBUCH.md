@@ -185,3 +185,10 @@ In der Benutzerverwaltung öffnet das **Augen-Symbol „Profil und Verfügbarkei
 Unter **Verfügbarkeiten** stehen alle fünf Reiter zur Einsicht bereit: **Wöchentlich**, **Rotierend**, **Einzelne Tage**, **Abwesenheiten** und **Einstellungen**. Themenzuordnungen und Gültigkeitsgrenzen sind sichtbar; vergangene einzelne Tage und Abwesenheiten können eingeblendet werden. Zentrale Abwesenheiten sind ausdrücklich gekennzeichnet. Unter Einstellungen steht die persönliche Buchungsfrist der ausgewählten Person.
 
 Diese neue Admin-Ansicht ist schreibgeschützt. Die vorhandene Profilbearbeitung bleibt über das **Stift-Symbol** erreichbar. Das **Namensschild-Symbol** ersetzt den breiten Textbutton. Auf schmalen Bildschirmen werden die vier Aktionen in zwei Zeilen angeordnet und zusätzliche Tabellenspalten ausgeblendet; die Angaben sind vollständig in der Detailansicht verfügbar.
+
+
+### Namensschilder im Sammeldruck (ab 1.30.0)
+
+In der Benutzerliste können Administratoren mit „Alle Schilder“ alle Benutzer drucken oder mit den Checkboxen einzelne Benutzer auswählen und „Auswahl drucken“ öffnen. Die Checkbox in der Tabellenüberschrift wählt die aktuell angezeigten (gefilterten) Benutzer aus. Die Auswahl bleibt beim Suchen erhalten; „Alle Schilder“ umfasst immer alle Benutzer.
+
+Der Druckdialog übernimmt die gespeicherte Anrede und den Zusatz jedes Benutzers. Start links/oben und horizontaler/vertikaler Abstand werden in Millimetern angegeben und gelten auf jeder Seite. Die Livevorschau verteilt die Schilder automatisch von links nach rechts, dann in die nächste Zeile und bei voller Seite auf das nächste A4-Blatt. Hoch- und Querformat sind verfügbar. Die bestehende Druckkorrektur wird berücksichtigt. PDF und Direktdruck verwenden dieselbe Anordnung. Beim Drucken tatsächliche Größe (100 %) und keine Kopf-/Fußzeilen wählen; kleine Randabstände erfordern gegebenenfalls randlosen Druck.

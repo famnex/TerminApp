@@ -1,14 +1,14 @@
-name: Publish 1.29.0
+name: Publish 1.30.0
 on:
   push:
     branches: [main]
     paths:
       - package.json
-      - .github/workflows/release-1.29.0.yml
+      - .github/workflows/release-1.30.0.yml
 permissions:
   contents: write
 concurrency:
-  group: release-1.29.0
+  group: release-1.30.0
   cancel-in-progress: false
 jobs:
   publish:
@@ -22,15 +22,15 @@ jobs:
           set -euo pipefail
           for package in package.json server/package.json client/package.json; do
             version=$(gh api "repos/${GH_REPO}/contents/${package}?ref=${GITHUB_SHA}" --jq .content | base64 --decode | jq -r .version)
-            if [ "$version" != "1.29.0" ]; then
+            if [ "$version" != "1.30.0" ]; then
               echo "Skipping release: $package is $version."
               exit 0
             fi
           done
-          if gh release view v1.29.0 >/dev/null 2>&1; then
-            echo "Release v1.29.0 already exists."
+          if gh release view v1.30.0 >/dev/null 2>&1; then
+            echo "Release v1.30.0 already exists."
             exit 0
           fi
-          gh release create v1.29.0 --target "$GITHUB_SHA" \
-            --title "Version 1.29.0" \
-            --notes "Admin-Einsicht in Benutzerprofile und alle Verfügbarkeits-Reiter einschließlich persönlicher Buchungsfrist, Themenzuordnungen und zentraler sowie vergangener Abwesenheiten. Reine Leseansicht mit serverseitiger Admin-Prüfung. Kompakte Icon-Aktionen für Details, Namensschild, Bearbeiten und Löschen; responsive Benutzerliste ohne starre Mindestbreiten."
+          gh release create v1.30.0 --target "$GITHUB_SHA" \
+            --title "Version 1.30.0" \
+            --notes "Sammeldruck von Namensschildern für alle oder ausgewählte Benutzer. A4 Hoch- und Querformat, einstellbare Startposition und horizontale/vertikale Abstände, Livevorschau, automatische Zeilen- und Seitenumbrüche. Direktdruck und mehrseitiger PDF-Export mit identischer Anordnung."
