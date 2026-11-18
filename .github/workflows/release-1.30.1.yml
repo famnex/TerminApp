@@ -1,14 +1,14 @@
-name: Publish 1.30.0
+name: Publish 1.30.1
 on:
   push:
     branches: [main]
     paths:
       - package.json
-      - .github/workflows/release-1.30.0.yml
+      - .github/workflows/release-1.30.1.yml
 permissions:
   contents: write
 concurrency:
-  group: release-1.30.0
+  group: release-1.30.1
   cancel-in-progress: false
 jobs:
   publish:
@@ -22,15 +22,15 @@ jobs:
           set -euo pipefail
           for package in package.json server/package.json client/package.json; do
             version=$(gh api "repos/${GH_REPO}/contents/${package}?ref=${GITHUB_SHA}" --jq .content | base64 --decode | jq -r .version)
-            if [ "$version" != "1.30.0" ]; then
+            if [ "$version" != "1.30.1" ]; then
               echo "Skipping release: $package is $version."
               exit 0
             fi
           done
-          if gh release view v1.30.0 >/dev/null 2>&1; then
-            echo "Release v1.30.0 already exists."
+          if gh release view v1.30.1 >/dev/null 2>&1; then
+            echo "Release v1.30.1 already exists."
             exit 0
           fi
-          gh release create v1.30.0 --target "$GITHUB_SHA" \
-            --title "Version 1.30.0" \
-            --notes "Sammeldruck von Namensschildern für alle oder ausgewählte Benutzer. A4 Hoch- und Querformat, einstellbare Startposition und horizontale/vertikale Abstände, Livevorschau, automatische Zeilen- und Seitenumbrüche. Direktdruck und mehrseitiger PDF-Export mit identischer Anordnung."
+          gh release create v1.30.1 --target "$GITHUB_SHA" \
+            --title "Version 1.30.1" \
+            --notes "Lange Namen auf Namensschildern werden an Leerzeichen und vorhandenen Bindestrichen umgebrochen; bei Bedarf werden lange Namen mit Trennstrich geteilt. Positionsbezeichnung unterhalb des Namens, Nutzung des freien Platzes unter dem Logo ohne Änderung der Schriftgrößen. Gilt für Einzel- und Sammeldruck."

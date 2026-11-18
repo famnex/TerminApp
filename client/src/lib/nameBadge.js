@@ -1,3 +1,4 @@
+import { wrapBadgeText, placeBadgeText } from './badgeText.js';
 import { badgeNumberErrors } from './nameBadgeValidation.js';
 import QRCode from 'qrcode';
 
@@ -36,6 +37,7 @@ export async function renderBadge(settings, person) {
     ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
     const rowY = n('contentTop'), qrSize = n('qrSize');
     if (rowY < pad || rowY + qrSize > h - pad) throw new Error('Der QR-Code liegt außerhalb der Schildfläche. Bitte Größe oder Abstand von oben reduzieren.');
+    let textTop = pad;
     if (settings.logo) {
         const logo = await loadImage(new URL(settings.logo, window.location.href).href);
         const lw = n('logoWidth'), lh = lw * logo.height / logo.width;
@@ -43,6 +45,7 @@ export async function renderBadge(settings, person) {
         const lx = (settings.logoAlign === 'left' ? pad : settings.logoAlign === 'right' ? w - pad - lw : (w - lw) / 2) + n('logoOffsetX');
         if (lx < 0 || lx + lw > w) throw new Error('Die horizontale Logo-Position liegt außerhalb des Schildes.');
         ctx.drawImage(logo, lx, n('logoTop'), lw, lh);
+        textTop = Math.max(pad, n('logoTop') + lh + 1);
     }
     const qr = await QRCode.toCanvas(bookingUrl(settings.appUrl, person.id), {
         errorCorrectionLevel: 'M', margin: 4, scale: 10,
@@ -54,32 +57,19 @@ export async function renderBadge(settings, person) {
     if (available < 10) throw new Error('Rechts neben dem QR-Code ist zu wenig Platz für den Text.');
     function linesFor(text, font) {
         ctx.font = font;
-        const lines = []; let line = '';
-        for (const word of text.trim().split(/\s+/)) {
-            const candidate = line ? `${line} ${word}` : word;
-            if (ctx.measureText(candidate).width <= available) { line = candidate; continue; }
-            if (line) lines.push(line);
-            line = '';
-            for (const ch of word) {
-                if (ctx.measureText(line + ch).width > available && line) { lines.push(line); line = ''; }
-                line += ch;
-            }
-        }
-        if (line) lines.push(line);
-        return lines;
+        return wrapBadgeText(text, available, value => ctx.measureText(value).width);
     }
     const nameSize = n('nameFontSize') * 25.4 / 72;
     const positionSize = n('positionFontSize') * 25.4 / 72;
     const nameFont = `bold ${nameSize}px Arial, sans-serif`, positionFont = `${positionSize}px Arial, sans-serif`;
     const names = linesFor(`${person.salutation} ${badgeSurname(person.displayName)}`, nameFont);
     const positions = linesFor(person.position || '', positionFont);
-    const total = names.length * nameSize * 1.2 + n('lineGap') + positions.length * positionSize * 1.2;
-    let y = rowY + Math.max(0, (qrSize - total) / 2);
-    if (y + total > h - pad) throw new Error('Der Text passt nicht auf das Schild. Bitte kleinere Schriftgrößen oder einen kürzeren Zusatz wählen.');
+    const placement = placeBadgeText({ nameLines: names.length, positionLines: positions.length, nameSize, positionSize, gap: n('lineGap'), rowY, qrSize, top: textTop, bottom: h - pad });
+    let y = placement.y;
     ctx.textBaseline = 'top'; ctx.fillStyle = settings.nameColor; ctx.font = nameFont;
-    for (const line of names) { ctx.fillText(line, x, y); y += nameSize * 1.2; }
+    for (const line of names) { ctx.fillText(line, x, y); y += placement.nameStep; }
     y += n('lineGap'); ctx.fillStyle = settings.positionColor; ctx.font = positionFont;
-    for (const line of positions) { ctx.fillText(line, x, y); y += positionSize * 1.2; }
+    for (const line of positions) { ctx.fillText(line, x, y); y += placement.positionStep; }
     // Draw INSIDE the exact outer dimensions: the border never enlarges the badge.
     const border = n('borderWidth');
     ctx.strokeStyle = settings.borderColor; ctx.lineWidth = border;
