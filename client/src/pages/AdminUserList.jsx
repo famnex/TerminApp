@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
-import { User, Shield, Key, Mail, Edit2, Plus, ChevronLeft, Trash, LayoutList, Eye, EyeOff, Upload } from 'lucide-react';
+import { User, Shield, Key, Mail, Edit2, Plus, ChevronLeft, Trash, LayoutList, Eye, EyeOff, Upload, IdCard } from 'lucide-react';
 
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -484,23 +484,23 @@ const AdminUserList = () => {
                             )}
                         </CardHeader>
                         <CardContent>
-                            <Table>
+                            <Table className="w-full table-fixed">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[30%] min-w-[200px]">Benutzer</TableHead>
-                                        <TableHead className="min-w-[150px]">Email</TableHead>
-                                        <TableHead className="w-[120px]">Rolle</TableHead>
-                                        <TableHead className="w-[80px]">Auth</TableHead>
-                                        <TableHead className="w-[110px]">Buchungsseite</TableHead>
-                                        <TableHead className="w-[70px] text-center">Termine</TableHead>
-                                        <TableHead className="w-[90px] text-right">Aktionen</TableHead>
+                                        <TableHead>Benutzer</TableHead>
+                                        <TableHead className="hidden md:table-cell w-[22%]">Email</TableHead>
+                                        <TableHead className="hidden lg:table-cell w-28">Rolle</TableHead>
+                                        <TableHead className="hidden xl:table-cell w-20">Auth</TableHead>
+                                        <TableHead className="hidden sm:table-cell w-24">Buchung</TableHead>
+                                        <TableHead className="w-16 text-center">Termine</TableHead>
+                                        <TableHead className="w-28 xl:w-44 text-right">Aktionen</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredUsers.map((u) => (
                                         <TableRow key={u.id} className="group">
                                             <TableCell className="font-medium py-3">
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-3 min-w-0">
                                                     {u.profileImage ? (
                                                         <img src={u.profileImage} alt={u.displayName} className="w-9 h-9 rounded-full object-cover border shrink-0" />
                                                     ) : (
@@ -508,10 +508,10 @@ const AdminUserList = () => {
                                                             {u.username.substring(0, 2).toUpperCase()}
                                                         </div>
                                                     )}
-                                                    <div className="flex flex-col min-w-0 max-w-[260px]">
+                                                    <div className="flex flex-col min-w-0 flex-1">
                                                         <span className="truncate leading-snug">{u.displayName}</span>
                                                         <div className="flex flex-wrap items-center gap-1 mt-0.5">
-                                                            <span className="text-xs text-muted-foreground font-mono">@{u.username}</span>
+                                                            <span className="text-xs text-muted-foreground font-mono truncate max-w-full" title={u.username}>@{u.username}</span>
                                                             {u.position && u.position.split(',').map(s => s.trim()).filter(Boolean).map((pos, idx) => (
                                                                 <span key={idx} className="text-[11px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 truncate max-w-[190px]" title={pos}>{pos}</span>
                                                             ))}
@@ -519,9 +519,9 @@ const AdminUserList = () => {
                                                     </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="py-3">
+                                            <TableCell className="py-3 hidden md:table-cell">
                                                 <div className="flex flex-col min-w-0">
-                                                    <span className="text-sm truncate max-w-[190px]" title={u.email || ''}>
+                                                    <span className="text-sm truncate max-w-full" title={u.email || ''}>
                                                         {u.email || <span className="text-muted-foreground italic">Keine Email</span>}
                                                     </span>
                                                     {!u.showEmail && u.email && (
@@ -531,16 +531,16 @@ const AdminUserList = () => {
                                                     )}
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="py-3 whitespace-nowrap">
+                                            <TableCell className="py-3 whitespace-nowrap hidden lg:table-cell">
                                                 <div className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${u.isAdmin ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
                                                     {u.isAdmin ? <Shield className="mr-1 h-3 w-3" /> : <User className="mr-1 h-3 w-3" />}
                                                     {u.isAdmin ? 'Administrator' : 'Benutzer'}
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="py-3 whitespace-nowrap">
+                                            <TableCell className="py-3 whitespace-nowrap hidden xl:table-cell">
                                                 <span className="font-mono text-xs text-muted-foreground uppercase">{u.authMethod}</span>
                                             </TableCell>
-                                            <TableCell className="py-3 whitespace-nowrap">
+                                            <TableCell className="py-3 whitespace-nowrap hidden sm:table-cell">
                                                 <div className="flex flex-col gap-0.5">
                                                     {u.bookingPageActive ? (
                                                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 w-fit">
@@ -575,9 +575,14 @@ const AdminUserList = () => {
                                                 </button>
                                             </TableCell>
                                             <TableCell className="py-3 text-right whitespace-nowrap">
-                                                <div className="flex justify-end gap-1">
-                                                    <Button variant="outline" size="sm" onClick={() => setBadgeUser(u)}>Namensschild</Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditModal(u)} title="Benutzer bearbeiten">
+                                                <div className="grid grid-cols-2 xl:flex justify-end gap-1 w-fit ml-auto">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => navigate(`/dashboard/users/${u.id}/settings`)} title="Profil und Verfügbarkeiten ansehen" aria-label={`Profil und Verfügbarkeiten von ${u.displayName} ansehen`}>
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setBadgeUser(u)} title="Namensschild" aria-label={`Namensschild für ${u.displayName}`}>
+                                                        <IdCard className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditModal(u)} title="Benutzer bearbeiten" aria-label={`Benutzer ${u.displayName} bearbeiten`}>
                                                         <Edit2 className="h-4 w-4" />
                                                     </Button>
                                                     <Button
@@ -585,7 +590,7 @@ const AdminUserList = () => {
                                                         size="icon"
                                                         className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                                                         onClick={() => handleDelete(u.id)}
-                                                        title="Benutzer löschen"
+                                                        title="Benutzer löschen" aria-label={`Benutzer ${u.displayName} löschen`}
                                                     >
                                                         <Trash className="h-4 w-4" />
                                                     </Button>

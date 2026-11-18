@@ -7,6 +7,7 @@ import RecoveryPage from './pages/RecoveryPage';
 import CancellationPage from './pages/CancellationPage';
 import Dashboard from './pages/Dashboard';
 import AdminUserList from './pages/AdminUserList';
+import AdminUserSettings from './pages/AdminUserSettings';
 import Appointments from './pages/Appointments';
 import Availability from './pages/Availability';
 import Topics from './pages/Topics';
@@ -211,6 +212,7 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/dashboard/profile" element={<Profile />} />
                 <Route path="/dashboard/users" element={<AdminUserList />} />
+                <Route path="/dashboard/users/:userId/settings" element={<AdminUserSettings />} />
                 <Route path="/dashboard/appointments" element={<Appointments />} />
                 <Route path="/dashboard/availability" element={<Availability />} />
                 <Route path="/dashboard/topics" element={<Topics />} />

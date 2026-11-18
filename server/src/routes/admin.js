@@ -1,11 +1,42 @@
 const express = require('express');
 const router = express.Router();
-const { GlobalSettings, User, BatchConfig, Topic, Availability, Department, Booking } = require('../models');
+const { GlobalSettings, User, BatchConfig, Topic, Availability, Department, Booking, TimeOff } = require('../models');
 const { requireAdmin } = require('../middleware/auth');
 
 // Apply requireAdmin middleware to all routes in this router
 // Note: authenticateToken is already applied in index.js for /api/admin
 router.use(requireAdmin);
+
+// Read-only inspection of one account. All fields are explicitly allowlisted.
+router.get('/users/:id/settings', async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ error: 'Ungültiger Benutzer.' });
+        const user = await User.findByPk(id, {
+            attributes: ['id', 'username', 'displayName', 'email', 'isAdmin', 'authMethod', 'position', 'location', 'locationType', 'profileImage', 'showEmail', 'bookingPageActive', 'bookingNotice', 'bookingDeadline', 'displayNameOverridden'],
+            include: [{ model: Department, attributes: ['id', 'name'], through: { attributes: [] } }]
+        });
+        if (!user) return res.status(404).json({ error: 'Benutzer nicht gefunden.' });
+        const { Op } = require('sequelize');
+        const [availabilities, timeOffs] = await Promise.all([
+            Availability.findAll({
+                where: { userId: id },
+                attributes: ['id', 'type', 'dayOfWeek', 'specificDate', 'startTime', 'endTime', 'validUntil', 'batchConfigId'],
+                include: [{ model: Topic, attributes: ['id', 'title'], through: { attributes: [] } }],
+                order: [['startTime', 'ASC'], ['id', 'ASC']]
+            }),
+            TimeOff.findAll({
+                where: { [Op.or]: [{ userId: id }, { userId: null }] },
+                attributes: ['id', 'userId', 'startDate', 'endDate', 'reason'],
+                order: [['startDate', 'ASC'], ['id', 'ASC']]
+            })
+        ]);
+        res.json({ user, availabilities, timeOffs });
+    } catch (err) {
+        console.error('Admin user settings:', err);
+        res.status(500).json({ error: 'Benutzereinstellungen konnten nicht geladen werden.' });
+    }
+});
 
 // GET All Users (For user management - sorted alphabetically with booking statistics)
 router.get('/users', async (req, res) => {

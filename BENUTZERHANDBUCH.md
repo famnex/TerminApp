@@ -177,3 +177,11 @@ Unter **Verfügbarkeiten → Einstellungen** bestimmt jede Person selbst, wie la
 Es zählen tatsächlich verstrichene Stunden, auch über Sommer-/Winterzeitwechsel hinweg. Bestehende und neue Konten erhalten standardmäßig 48 Stunden Vorlauf. Nachträglich gespeicherte persönliche Einstellungen werden bei Updates und Neustarts beibehalten. Bereits gebuchte Termine werden durch eine Änderung nicht storniert.
 
 Die Einstellung ersetzt die frühere globale Vorlaufzeit in Stunden. Slots außerhalb der persönlichen Buchungsfrist werden nicht mehr angeboten; auch ein vor Ablauf geöffnetes Buchungsformular kann danach keine Buchung mehr abschließen. Die Einstellung kann nur für das jeweils angemeldete Konto gespeichert werden.
+
+## Benutzereinstellungen als Admin einsehen (ab 1.29.0)
+
+In der Benutzerverwaltung öffnet das **Augen-Symbol „Profil und Verfügbarkeiten ansehen“** die Detailansicht einer Person. Der Reiter **Profil** zeigt Profilbild, Anzeigename, Benutzername, Kontaktinformationen, Position, Ort, Abteilungen, Anmeldeart, Sichtbarkeit der E-Mail, Buchungsstatus und die alternative Kontaktnachricht.
+
+Unter **Verfügbarkeiten** stehen alle fünf Reiter zur Einsicht bereit: **Wöchentlich**, **Rotierend**, **Einzelne Tage**, **Abwesenheiten** und **Einstellungen**. Themenzuordnungen und Gültigkeitsgrenzen sind sichtbar; vergangene einzelne Tage und Abwesenheiten können eingeblendet werden. Zentrale Abwesenheiten sind ausdrücklich gekennzeichnet. Unter Einstellungen steht die persönliche Buchungsfrist der ausgewählten Person.
+
+Diese neue Admin-Ansicht ist schreibgeschützt. Die vorhandene Profilbearbeitung bleibt über das **Stift-Symbol** erreichbar. Das **Namensschild-Symbol** ersetzt den breiten Textbutton. Auf schmalen Bildschirmen werden die vier Aktionen in zwei Zeilen angeordnet und zusätzliche Tabellenspalten ausgeblendet; die Angaben sind vollständig in der Detailansicht verfügbar.
